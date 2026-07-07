@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Admin – ACE Avaliações</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --navy:#0D1B4B; --blue:#1A5CB5; --green:#5AE620; --green-dark:#3db012;
+      --white:#fff; --glass:rgba(255,255,255,0.06); --border:rgba(255,255,255,0.12);
+      --dim:rgba(255,255,255,0.50); --red:#ff6b6b; --red-bg:rgba(255,107,107,0.10);
+    }
+    html,body { min-height:100vh; font-family:'Inter',sans-serif; background:var(--navy); color:var(--white); }
+
+    .bg {
+      position:fixed; inset:0; z-index:0;
+      background: linear-gradient(160deg,rgba(13,27,75,0.95) 0%,rgba(8,14,40,0.98) 100%),
+        url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80') center/cover;
+    }
+    .bg::after {
+      content:''; position:absolute; inset:0;
+      background-image: linear-gradient(rgba(90,230,32,0.025) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(90,230,32,0.025) 1px,transparent 1px);
+      background-size:48px 48px;
+    }
+
+    #app { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; }
+
+    /* HEADER */
+    header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 40px;
+      background:rgba(13,27,75,0.75); backdrop-filter:blur(14px);
+      border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100;
+    }
+    .logo-area { display:flex; align-items:center; gap:14px; }
+    .logo-area img { height:40px; background:#fff; border-radius:8px; padding:3px 9px; }
+    .header-title { border-left:2px solid var(--green); padding-left:14px; }
+    .header-title span { display:block; font-size:10px; font-weight:500; letter-spacing:2.5px; text-transform:uppercase; color:var(--dim); }
+    .header-title strong { display:block; font-size:15px; font-weight:700; }
+    .badge-admin { background:rgba(255,107,107,0.15); border:1px solid rgba(255,107,107,0.40); color:#ff9f9f; font-size:11px; font-weight:600; letter-spacing:1.5px; padding:5px 16px; border-radius:20px; text-transform:uppercase; }
+
+    /* LOGIN */
+    #secao-login {
+      flex:1; display:flex; align-items:center; justify-content:center; padding:40px 24px;
+    }
+    .login-card {
+      background:var(--glass); backdrop-filter:blur(20px);
+      border:1px solid var(--border); border-radius:20px;
+      overflow:hidden; max-width:420px; width:100%;
+      box-shadow:0 8px 48px rgba(0,0,0,0.4);
+    }
+    .login-header {
+      background:linear-gradient(135deg,rgba(26,92,181,0.55),rgba(13,27,75,0.80));
+      border-bottom:1px solid var(--border);
+      padding:26px 32px; display:flex; align-items:center; gap:16px;
+    }
+    .login-header .icon { width:48px;height:48px; background:rgba(90,230,32,0.15); border:1px solid rgba(90,230,32,0.3); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+    .login-header h2 { font-size:17px; font-weight:700; }
+    .login-header p  { font-size:12px; color:var(--dim); margin-top:3px; }
+    .login-body { padding:28px 32px; }
+    .field { margin-bottom:18px; }
+    .field label { display:block; font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--dim); margin-bottom:8px; }
+    .field input {
+      width:100%; background:rgba(255,255,255,0.07); border:1px solid var(--border);
+      border-radius:10px; color:var(--white); font-family:'Inter',sans-serif;
+      font-size:14px; padding:13px 16px; outline:none; transition:border-color 0.2s;
+    }
+    .field input:focus { border-color:var(--green); }
+    .field input::placeholder { color:rgba(255,255,255,0.22); }
+    .erro-msg { font-size:12px; color:var(--red); margin-top:6px; display:none; }
+    .btn { display:block; width:100%; background:linear-gradient(135deg,var(--blue),var(--navy)); border:1px solid rgba(90,230,32,0.18); color:var(--white); font-family:'Inter',sans-serif; font-size:14px; font-weight:700; padding:15px; border-radius:10px; cursor:pointer; transition:opacity 0.2s,transform 0.15s; text-align:center; }
+    .btn:hover { opacity:0.9; transform:translateY(-1px); }
+
+    /* PAINEL */
+    #secao-painel { display:none; flex:1; padding:32px 40px; gap:28px; flex-direction:column; }
+
+    .stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    .stat-card {
+      background:var(--glass); backdrop-filter:blur(12px);
+      border:1px solid var(--border); border-radius:14px; padding:20px 24px;
+    }
+    .stat-card .st-label { font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--dim); margin-bottom:8px; }
+    .stat-card .st-val { font-size:28px; font-weight:700; }
+    .stat-card.green .st-val { color:var(--green); }
+    .stat-card.red   .st-val { color:var(--red); }
+    .stat-card.blue  .st-val { color:#6ab0ff; }
+
+    .painel-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+
+    .panel-card {
+      background:var(--glass); backdrop-filter:blur(16px);
+      border:1px solid var(--border); border-radius:16px; overflow:hidden;
+    }
+    .panel-card-header {
+      padding:18px 24px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .panel-card-header h3 { font-size:14px; font-weight:700; display:flex; align-items:center; gap:8px; }
+    .panel-card-header .count { background:rgba(255,255,255,0.10); border-radius:20px; font-size:11px; font-weight:600; padding:2px 10px; color:var(--dim); }
+
+    .add-row { display:flex; gap:8px; padding:16px 24px; border-bottom:1px solid var(--border); }
+    .add-row input {
+      flex:1; background:rgba(255,255,255,0.07); border:1px solid var(--border);
+      border-radius:8px; color:var(--white); font-family:'Inter',sans-serif;
+      font-size:13px; padding:10px 14px; outline:none; transition:border-color 0.2s;
+    }
+    .add-row input:focus { border-color:var(--green); }
+    .add-row input::placeholder { color:rgba(255,255,255,0.22); }
+    .btn-add { background:var(--green); color:var(--navy); font-family:'Inter',sans-serif; font-size:12px; font-weight:700; padding:10px 18px; border:none; border-radius:8px; cursor:pointer; white-space:nowrap; transition:background 0.2s; }
+    .btn-add:hover { background:var(--green-dark); }
+
+    .list-area { max-height:340px; overflow-y:auto; }
+    .list-area::-webkit-scrollbar { width:4px; }
+    .list-area::-webkit-scrollbar-track { background:transparent; }
+    .list-area::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:4px; }
+
+    .list-item {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 24px; border-bottom:1px solid rgba(255,255,255,0.05);
+      transition:background 0.15s;
+    }
+    .list-item:hover { background:rgba(255,255,255,0.04); }
+    .list-item:last-child { border-bottom:none; }
+
+    .item-info { display:flex; align-items:center; gap:10px; }
+    .item-avatar {
+      width:32px; height:32px; border-radius:50%;
+      background:linear-gradient(135deg,var(--blue),var(--navy));
+      display:flex; align-items:center; justify-content:center;
+      font-size:12px; font-weight:700; flex-shrink:0;
+      border:1px solid var(--border);
+    }
+    .item-avatar.blocked { background:linear-gradient(135deg,#8B0000,#c0392b); }
+    .item-name { font-size:13px; font-weight:500; }
+    .item-sub  { font-size:11px; color:var(--dim); margin-top:1px; }
+
+    .btn-remove { background:rgba(255,107,107,0.12); border:1px solid rgba(255,107,107,0.25); color:var(--red); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; padding:5px 12px; border-radius:6px; cursor:pointer; transition:background 0.2s; }
+    .btn-remove:hover { background:rgba(255,107,107,0.25); }
+    .btn-unlock { background:rgba(90,230,32,0.12); border:1px solid rgba(90,230,32,0.25); color:var(--green); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; padding:5px 12px; border-radius:6px; cursor:pointer; transition:background 0.2s; }
+    .btn-unlock:hover { background:rgba(90,230,32,0.25); }
+
+    .empty-state { padding:32px 24px; text-align:center; color:var(--dim); font-size:13px; }
+    .empty-state .es-icon { font-size:32px; margin-bottom:8px; }
+
+    /* LOADING */
+    #loading-overlay {
+      display:none; position:fixed; inset:0; z-index:999;
+      background:rgba(13,27,75,0.85); backdrop-filter:blur(8px);
+      align-items:center; justify-content:center; flex-direction:column; gap:14px;
+    }
+    .spinner { width:36px;height:36px; border:3px solid rgba(255,255,255,0.12); border-top-color:var(--green); border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #loading-overlay p { font-size:13px; color:var(--dim); }
+
+    .logout-btn { background:rgba(255,255,255,0.07); border:1px solid var(--border); color:var(--dim); font-family:'Inter',sans-serif; font-size:12px; padding:7px 16px; border-radius:8px; cursor:pointer; transition:background 0.2s; }
+    .logout-btn:hover { background:rgba(255,255,255,0.12); color:var(--white); }
+
+    footer { background:rgba(13,27,75,0.70); backdrop-filter:blur(10px); border-top:1px solid var(--border); text-align:center; font-size:11.5px; color:var(--dim); padding:14px 20px; }
+    footer strong { color:rgba(255,255,255,0.70); }
+
+    @media(max-width:700px) {
+      #secao-painel { padding:20px 16px; }
+      .stats-row { grid-template-columns:1fr 1fr; }
+      .painel-grid { grid-template-columns:1fr; }
+      header { padding:14px 18px; }
+      .badge-admin { display:none; }
+    }
+  </style>
+</head>
+<body>
+<div class="bg"></div>
+
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <p id="loading-msg">Carregando...</p>
+</div>
+
+<div id="app">
+  <header>
+    <div class="logo-area">
+      <img src="https://raw.githubusercontent.com/seu-usuario/seu-repo/main/logo_png.png"
+           alt="ACE" onerror="this.style.display='none'">
+      <div class="header-title">
+        <span>ACE Soluções Contábeis</span>
+        <strong>Painel Administrativo</strong>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="badge-admin">Admin</div>
+      <button class="logout-btn" id="btn-logout" style="display:none" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <!-- LOGIN -->
+  <div id="secao-login">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="icon">🔐</div>
+        <div>
+          <h2>Acesso Restrito</h2>
+          <p>Digite a senha de administrador para continuar</p>
+        </div>
+      </div>
+      <div class="login-body">
+        <div class="field">
+          <label>Senha</label>
+          <input type="password" id="input-login" placeholder="••••••••" maxlength="30">
+          <div class="erro-msg" id="login-erro">Senha incorreta. Tente novamente.</div>
+        </div>
+        <button class="btn" onclick="fazerLogin()">Entrar →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAINEL -->
+  <div id="secao-painel">
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card green">
+        <div class="st-label">Autorizados</div>
+        <div class="st-val" id="count-auth">—</div>
+      </div>
+      <div class="stat-card red">
+        <div class="st-label">Bloqueados</div>
+        <div class="st-val" id="count-block">—</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="st-label">Disponíveis</div>
+        <div class="st-val" id="count-disp">—</div>
+      </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="painel-grid">
+
+      <!-- Autorizados -->
+      <div class="panel-card">
+        <div class="panel-card-header">
+          <h3>✅ Colaboradores Autorizados <span class="count" id="lbl-auth">0</span></h3>
+        </div>
+        <div class="add-row">
+          <input type="text" id="input-novo" placeholder="Nome completo do colaborador">
+          <button class="btn-add" onclick="adicionarColaborador()">+ Adicionar</button>
+        </div>
+        <div class="list-area" id="lista-autorizados">
+          <div class="empty-state"><div class="es-icon">👥</div>Nenhum colaborador cadastrado.</div>
+        </div>
+      </div>
+
+      <!-- Bloqueados -->
+      <div class="panel-card">
+        <div class="panel-card-header">
+          <h3>🚫 Bloqueados <span class="count" id="lbl-block">0</span></h3>
+        </div>
+        <div class="list-area" id="lista-bloqueados">
+          <div class="empty-state"><div class="es-icon">🎉</div>Nenhum colaborador bloqueado.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>&copy; <strong>ACE Soluções Contábeis</strong> — Painel Administrativo Interno</footer>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDHKonTFEuT09ZqmM6ovrt_l3Uwij9n1Ts",
+    authDomain: "formulario-de-avaliacao-2a1bc.firebaseapp.com",
+    projectId: "formulario-de-avaliacao-2a1bc",
+    storageBucket: "formulario-de-avaliacao-2a1bc.firebasestorage.app",
+    messagingSenderId: "26614328762",
+    appId: "1:26614328762:web:ccd355acc24ad17c2d4183"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  const SENHA_ADMIN = "1901";
+
+  function loading(show, msg) {
+    document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+    if (msg) document.getElementById('loading-msg').textContent = msg;
+  }
+
+  function chave(nome) {
+    return nome.trim().toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+  }
+
+  function iniciais(nome) {
+    return nome.trim().split(' ').slice(0,2).map(p => p[0].toUpperCase()).join('');
+  }
+
+  // LOGIN
+  window.fazerLogin = function() {
+    const val  = document.getElementById('input-login').value;
+    const erro = document.getElementById('login-erro');
+    if (val !== SENHA_ADMIN) {
+      erro.style.display = 'block';
+      document.getElementById('input-login').value = '';
+      return;
+    }
+    erro.style.display = 'none';
+    document.getElementById('secao-login').style.display = 'none';
+    document.getElementById('secao-painel').style.display = 'flex';
+    document.getElementById('btn-logout').style.display = 'block';
+    carregarDados();
+  };
+
+  window.logout = function() {
+    document.getElementById('secao-painel').style.display = 'none';
+    document.getElementById('secao-login').style.display  = 'flex';
+    document.getElementById('btn-logout').style.display   = 'none';
+    document.getElementById('input-login').value = '';
+  };
+
+  document.getElementById('input-login').addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.fazerLogin();
+  });
+  document.getElementById('input-novo').addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.adicionarColaborador();
+  });
+
+  // CARREGAR DADOS
+  async function carregarDados() {
+    loading(true, 'Carregando dados...');
+    try {
+      const [snapAuth, snapBlock] = await Promise.all([
+        getDocs(collection(db, 'autorizados')),
+        getDocs(collection(db, 'bloqueados'))
+      ]);
+
+      const autorizados = [];
+      snapAuth.forEach(d => autorizados.push({ id: d.id, ...d.data() }));
+
+      const bloqueados = [];
+      snapBlock.forEach(d => bloqueados.push({ id: d.id, ...d.data() }));
+
+      renderAutorizados(autorizados, bloqueados.map(b => b.id));
+      renderBloqueados(bloqueados);
+
+      const total = autorizados.length;
+      const bloqN = bloqueados.length;
+      const disp  = total - bloqN;
+      document.getElementById('count-auth').textContent  = total;
+      document.getElementById('count-block').textContent = bloqN;
+      document.getElementById('count-disp').textContent  = disp >= 0 ? disp : 0;
+      document.getElementById('lbl-auth').textContent    = total;
+      document.getElementById('lbl-block').textContent   = bloqN;
+    } catch(e) {
+      alert('Erro ao carregar dados. Verifique sua conexão.');
+    }
+    loading(false);
+  }
+
+  function renderAutorizados(lista, bloqueadosIds) {
+    const el = document.getElementById('lista-autorizados');
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty-state"><div class="es-icon">👥</div>Nenhum colaborador cadastrado.</div>';
+      return;
+    }
+    el.innerHTML = lista.map(c => {
+      const bloq = bloqueadosIds.includes(c.id);
+      return `
+        <div class="list-item">
+          <div class="item-info">
+            <div class="item-avatar ${bloq ? 'blocked' : ''}">${iniciais(c.nome)}</div>
+            <div>
+              <div class="item-name">${c.nome}</div>
+              <div class="item-sub">${bloq ? '🔒 Bloqueado' : '✅ Disponível'}</div>
+            </div>
+          </div>
+          <button class="btn-remove" onclick="removerColaborador('${c.id}', '${c.nome.replace(/'/g,"\\'")}')">Remover</button>
+        </div>`;
+    }).join('');
+  }
+
+  function renderBloqueados(lista) {
+    const el = document.getElementById('lista-bloqueados');
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty-state"><div class="es-icon">🎉</div>Nenhum colaborador bloqueado.</div>';
+      return;
+    }
+    el.innerHTML = lista.map(c => {
+      const data = c.bloqueadoEm ? new Date(c.bloqueadoEm).toLocaleString('pt-BR') : '';
+      return `
+        <div class="list-item">
+          <div class="item-info">
+            <div class="item-avatar blocked">${iniciais(c.nome)}</div>
+            <div>
+              <div class="item-name">${c.nome}</div>
+              <div class="item-sub">${data ? 'Bloqueado em ' + data : 'Data desconhecida'}</div>
+            </div>
+          </div>
+          <button class="btn-unlock" onclick="desbloquear('${c.id}')">Liberar</button>
+        </div>`;
+    }).join('');
+  }
+
+  // ADICIONAR
+  window.adicionarColaborador = async function() {
+    const input = document.getElementById('input-novo');
+    const nome  = input.value.trim();
+    if (nome.length < 3) { input.focus(); return; }
+
+    loading(true, 'Adicionando colaborador...');
+    try {
+      await setDoc(doc(db, 'autorizados', chave(nome)), { nome });
+      input.value = '';
+      await carregarDados();
+    } catch(e) {
+      alert('Erro ao adicionar. Tente novamente.');
+      loading(false);
+    }
+  };
+
+  // REMOVER
+  window.removerColaborador = async function(id, nome) {
+    if (!confirm(`Remover "${nome}" da lista de autorizados?`)) return;
+    loading(true, 'Removendo...');
+    try {
+      await deleteDoc(doc(db, 'autorizados', id));
+      await deleteDoc(doc(db, 'bloqueados', id)).catch(() => {});
+      await carregarDados();
+    } catch(e) {
+      alert('Erro ao remover. Tente novamente.');
+      loading(false);
+    }
+  };
+
+  // DESBLOQUEAR
+  window.desbloquear = async function(id) {
+    loading(true, 'Desbloqueando...');
+    try {
+      await deleteDoc(doc(db, 'bloqueados', id));
+      await carregarDados();
+    } catch(e) {
+      alert('Erro ao desbloquear. Tente novamente.');
+      loading(false);
+    }
+  };
+</script>
+</body>
+</html>
