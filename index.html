@@ -416,7 +416,7 @@
     const nome = inputNome.value.trim();
     const link = inputLink.value.trim();
  
-    if (nome.length < 3) { inputNome.focus(); alert('Digite o nomR.'); return; }
+    if (nome.length < 3) { inputNome.focus(); alert('Digite o nome.'); return; }
     if (!link.startsWith('http')) { inputLink.focus(); alert('Cole o link do JotForm corretamente.'); return; }
  
     loading(true, 'Adicionando colaborador...');
