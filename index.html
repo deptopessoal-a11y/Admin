@@ -243,7 +243,7 @@
           <h3>✅ Colaboradores Autorizados <span class="count" id="lbl-auth">0</span></h3>
         </div>
         <div class="add-row">
-          <input type="text" id="input-novo" placeholder="Nome completo do colaborador">
+          <input type="text" id="input-novo" placeholder="Nome do colaborador">
           <input type="text" id="input-link" placeholder="Link do JotForm (https://form.jotform.com/...)">
           <div class="add-row-fields">
             <button class="btn-add" style="width:100%" onclick="adicionarColaborador()">+ Adicionar Colaborador</button>
@@ -416,7 +416,7 @@
     const nome = inputNome.value.trim();
     const link = inputLink.value.trim();
  
-    if (nome.length < 3) { inputNome.focus(); alert('Digite o nome completo.'); return; }
+    if (nome.length < 3) { inputNome.focus(); alert('Digite o nomR.'); return; }
     if (!link.startsWith('http')) { inputLink.focus(); alert('Cole o link do JotForm corretamente.'); return; }
  
     loading(true, 'Adicionando colaborador...');
