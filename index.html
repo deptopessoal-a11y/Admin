@@ -191,7 +191,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:12px;">
       <div class="badge-admin">Admin</div>
-      <button class="logout-btn" id="btn-logout" style="display:none" onclick="logout()">Sair</button>
+      <button class="logout-btn" id="btn-logout" style="display:none">Sair</button>
     </div>
   </header>
  
@@ -211,7 +211,7 @@
           <input type="password" id="input-login" placeholder="••••••••" maxlength="30">
           <div class="erro-msg" id="login-erro">Senha incorreta. Tente novamente.</div>
         </div>
-        <button class="btn" onclick="fazerLogin()">Entrar →</button>
+        <button class="btn" id="btn-entrar">Entrar →</button>
       </div>
     </div>
   </div>
@@ -243,10 +243,10 @@
           <h3>✅ Colaboradores Autorizados <span class="count" id="lbl-auth">0</span></h3>
         </div>
         <div class="add-row">
-          <input type="text" id="input-novo" placeholder="Nome do colaborador">
+          <input type="text" id="input-novo" placeholder="Nome completo do colaborador">
           <input type="text" id="input-link" placeholder="Link do JotForm (https://form.jotform.com/...)">
           <div class="add-row-fields">
-            <button class="btn-add" style="width:100%" onclick="adicionarColaborador()">+ Adicionar Colaborador</button>
+            <button class="btn-add" style="width:100%" id="btn-adicionar">+ Adicionar Colaborador</button>
           </div>
         </div>
         <div class="list-area" id="lista-autorizados">
@@ -270,7 +270,7 @@
   <footer>&copy; <strong>ACE Soluções Contábeis</strong> — Painel Administrativo Interno</footer>
 </div>
  
-<script type="module">
+<script type="module" defer>
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
  
@@ -286,7 +286,6 @@
   const app = initializeApp(firebaseConfig);
   const db  = getFirestore(app);
  
-  const SENHA_ADMIN = "1901";
  
   function loading(show, msg) {
     document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
@@ -304,19 +303,40 @@
   }
  
   // LOGIN
-  window.fazerLogin = function() {
+  async function hashSenha(senha) {
+    const enc = new TextEncoder().encode(senha);
+    const buf = await crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+ 
+  window.fazerLogin = async function() {
     const val  = document.getElementById('input-login').value;
     const erro = document.getElementById('login-erro');
-    if (val !== SENHA_ADMIN) {
+ 
+    if (!val.trim()) return;
+ 
+    try {
+      const digitadoHash = await hashSenha(val);
+      const snap = await getDoc(doc(db, 'config', 'admin'));
+      const senhaCorreta = snap.exists() ? snap.data().senhaHash : null;
+ 
+      if (!senhaCorreta || digitadoHash !== senhaCorreta) {
+        erro.style.display = 'block';
+        document.getElementById('input-login').value = '';
+        document.getElementById('input-login').focus();
+        return;
+      }
+ 
+      erro.style.display = 'none';
+      document.getElementById('secao-login').style.display  = 'none';
+      document.getElementById('secao-painel').style.display = 'flex';
+      document.getElementById('btn-logout').style.display   = 'block';
+      carregarDados();
+    } catch(e) {
+      console.error('[ACE Admin] Erro ao autenticar:', e);
+      erro.textContent = 'Erro de conexão com o banco de dados. Verifique sua internet.';
       erro.style.display = 'block';
-      document.getElementById('input-login').value = '';
-      return;
     }
-    erro.style.display = 'none';
-    document.getElementById('secao-login').style.display = 'none';
-    document.getElementById('secao-painel').style.display = 'flex';
-    document.getElementById('btn-logout').style.display = 'block';
-    carregarDados();
   };
  
   window.logout = function() {
@@ -382,7 +402,7 @@
               <div class="item-sub">${bloq ? '🔒 Bloqueado' : '✅ Disponível'}</div>
             </div>
           </div>
-          <button class="btn-remove" onclick="removerColaborador('${c.id}', '${c.nome.replace(/'/g,"\\'")}')">Remover</button>
+          <button class="btn-remove" onclick="window.removerColaborador('${c.id}', '${c.nome.replace(/'/g,"\\'")}')">Remover</button>
         </div>`;
     }).join('');
   }
@@ -404,7 +424,7 @@
               <div class="item-sub">${data ? 'Bloqueado em ' + data : 'Data desconhecida'}</div>
             </div>
           </div>
-          <button class="btn-unlock" onclick="desbloquear('${c.id}')">Liberar</button>
+          <button class="btn-unlock" onclick="window.desbloquear('${c.id}')">Liberar</button>
         </div>`;
     }).join('');
   }
@@ -416,7 +436,7 @@
     const nome = inputNome.value.trim();
     const link = inputLink.value.trim();
  
-    if (nome.length < 3) { inputNome.focus(); alert('Digite o nome.'); return; }
+    if (nome.length < 3) { inputNome.focus(); alert('Digite o nome completo.'); return; }
     if (!link.startsWith('http')) { inputLink.focus(); alert('Cole o link do JotForm corretamente.'); return; }
  
     loading(true, 'Adicionando colaborador...');
@@ -474,6 +494,18 @@
       loading(false);
     }
   };
+ 
+  // ── Listeners de botão (compatível com type="module") ──
+  document.getElementById('btn-entrar')   ?.addEventListener('click', () => window.fazerLogin());
+  document.getElementById('btn-logout')   ?.addEventListener('click', () => window.logout());
+  document.getElementById('btn-adicionar')?.addEventListener('click', () => window.adicionarColaborador());
+ 
+  document.getElementById('input-login')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.fazerLogin();
+  });
+  document.getElementById('input-novo')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.adicionarColaborador();
+  });
 </script>
 </body>
 </html>
