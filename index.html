@@ -202,14 +202,18 @@
         <div class="icon">🔐</div>
         <div>
           <h2>Acesso Restrito</h2>
-          <p>Digite a senha de administrador para continuar</p>
+          <p>Entre com seu e-mail e senha de administrador</p>
         </div>
       </div>
       <div class="login-body">
         <div class="field">
+          <label>E-mail</label>
+          <input type="email" id="input-email" placeholder="seu@email.com" autocomplete="username">
+        </div>
+        <div class="field">
           <label>Senha</label>
-          <input type="password" id="input-login" placeholder="••••••••" maxlength="30">
-          <div class="erro-msg" id="login-erro">Senha incorreta. Tente novamente.</div>
+          <input type="password" id="input-login" placeholder="••••••••" maxlength="30" autocomplete="current-password">
+          <div class="erro-msg" id="login-erro">E-mail ou senha incorretos.</div>
         </div>
         <button class="btn" id="btn-entrar">Entrar →</button>
       </div>
@@ -273,6 +277,7 @@
 <script type="module" defer>
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDHKonTFEuT09ZqmM6ovrt_l3Uwij9n1Ts",
@@ -283,8 +288,9 @@
     appId: "1:26614328762:web:ccd355acc24ad17c2d4183"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
+  const app  = initializeApp(firebaseConfig);
+  const db   = getFirestore(app);
+  const auth = getAuth(app);
 
 
   function loading(show, msg) {
@@ -302,56 +308,48 @@
     return nome.trim().split(' ').slice(0,2).map(p => p[0].toUpperCase()).join('');
   }
 
-  // LOGIN
-  async function hashSenha(senha) {
-    const enc = new TextEncoder().encode(senha);
-    const buf = await crypto.subtle.digest('SHA-256', enc);
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-  }
-
+  // LOGIN (Firebase Auth de verdade — a validação da senha acontece nos
+  // servidores do Firebase, não mais comparando hash no navegador)
   window.fazerLogin = async function() {
-    const val  = document.getElementById('input-login').value;
-    const erro = document.getElementById('login-erro');
+    const email = document.getElementById('input-email').value.trim();
+    const senha = document.getElementById('input-login').value;
+    const erro  = document.getElementById('login-erro');
 
-    if (!val.trim()) return;
+    if (!email || !senha) return;
 
     try {
-      const digitadoHash = await hashSenha(val);
-      const snap = await getDoc(doc(db, 'config', 'admin'));
-      const senhaCorreta = snap.exists() ? snap.data().senhaHash : null;
-
-      if (!senhaCorreta || digitadoHash !== senhaCorreta) {
-        erro.style.display = 'block';
-        document.getElementById('input-login').value = '';
-        document.getElementById('input-login').focus();
-        return;
-      }
-
-      erro.style.display = 'none';
-      document.getElementById('secao-login').style.display  = 'none';
-      document.getElementById('secao-painel').style.display = 'flex';
-      document.getElementById('btn-logout').style.display   = 'block';
-      carregarDados();
+      await signInWithEmailAndPassword(auth, email, senha);
+      // onAuthStateChanged cuida de exibir o painel
     } catch(e) {
       console.error('[ACE Admin] Erro ao autenticar:', e);
-      erro.textContent = 'Erro de conexão com o banco de dados. Verifique sua internet.';
+      erro.textContent = 'E-mail ou senha incorretos.';
       erro.style.display = 'block';
+      document.getElementById('input-login').value = '';
+      document.getElementById('input-login').focus();
     }
   };
 
   window.logout = function() {
-    document.getElementById('secao-painel').style.display = 'none';
-    document.getElementById('secao-login').style.display  = 'flex';
-    document.getElementById('btn-logout').style.display   = 'none';
-    document.getElementById('input-login').value = '';
+    signOut(auth);
   };
 
-  document.getElementById('input-login').addEventListener('keydown', e => {
-    if (e.key === 'Enter') window.fazerLogin();
+  // Única fonte de verdade pra mostrar login x painel — também cobre o
+  // caso de recarregar a página já logado (sessão persiste no navegador)
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      document.getElementById('login-erro').style.display    = 'none';
+      document.getElementById('secao-login').style.display   = 'none';
+      document.getElementById('secao-painel').style.display  = 'flex';
+      document.getElementById('btn-logout').style.display    = 'block';
+      carregarDados();
+    } else {
+      document.getElementById('secao-painel').style.display = 'none';
+      document.getElementById('secao-login').style.display  = 'flex';
+      document.getElementById('btn-logout').style.display   = 'none';
+      document.getElementById('input-login').value = '';
+    }
   });
-  document.getElementById('input-novo').addEventListener('keydown', e => {
-    if (e.key === 'Enter') window.adicionarColaborador();
-  });
+
 
   // CARREGAR DADOS
   async function carregarDados() {
@@ -500,6 +498,9 @@
   document.getElementById('btn-logout')   ?.addEventListener('click', () => window.logout());
   document.getElementById('btn-adicionar')?.addEventListener('click', () => window.adicionarColaborador());
 
+  document.getElementById('input-email')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.fazerLogin();
+  });
   document.getElementById('input-login')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') window.fazerLogin();
   });
