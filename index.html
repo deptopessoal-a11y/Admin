@@ -346,6 +346,7 @@
       </div>
       <div class="add-row" id="builder-prova">
         <button class="btn-add" style="width:100%" onclick="window.iniciarNovaProva()">+ Nova Prova</button>
+        <button class="btn-add-mini" style="width:100%" onclick="window.mostrarImportarJson()">📥 Importar JSON (gerado por IA)</button>
       </div>
       <div class="list-area" id="lista-provas">
         <div class="empty-state"><div class="es-icon">📝</div>Nenhuma prova criada ainda.</div>
@@ -735,6 +736,56 @@
     renderBuilderProva();
   };
 
+  // Importar prova pronta em JSON (ex.: gerada por uma IA em outra
+  // conversa) — cai no mesmo builder de sempre pra revisar antes de
+  // salvar, não grava direto no Firestore sem passar pela revisão.
+  window.mostrarImportarJson = function() {
+    document.getElementById('builder-prova').innerHTML = `
+      <p style="font-size:12px;color:var(--dim);margin-bottom:2px;">Cole abaixo o JSON gerado (veja o prompt de geração automática).</p>
+      <textarea id="import-json-texto" rows="10" style="width:100%;background:rgba(255,255,255,0.07);border:1px solid var(--border);border-radius:8px;color:var(--white);font-family:monospace;font-size:12px;padding:10px 12px;outline:none;" placeholder='{"titulo": "...", "perguntas": [...]}'></textarea>
+      <div class="add-row-fields">
+        <button class="btn-add" style="width:100%" onclick="window.processarImportJson()">Processar JSON</button>
+        <button class="btn-remove" style="width:100%" onclick="window.cancelarEdicaoProva()">Cancelar</button>
+      </div>`;
+  };
+
+  window.processarImportJson = function() {
+    const texto = document.getElementById('import-json-texto').value.trim();
+    let dados;
+    try {
+      dados = JSON.parse(texto);
+    } catch(e) {
+      alert('JSON inválido. Confira se copiou o bloco inteiro, com todas as chaves { } e colchetes [ ].');
+      return;
+    }
+    if (!dados.titulo || !Array.isArray(dados.perguntas) || !dados.perguntas.length) {
+      alert('O JSON precisa ter "titulo" e uma lista "perguntas" com pelo menos uma pergunta.');
+      return;
+    }
+    const perguntasValidadas = [];
+    for (const p of dados.perguntas) {
+      if (!p.enunciado) { alert('Toda pergunta precisa de "enunciado".'); return; }
+      if (p.tipo === 'aberta') {
+        perguntasValidadas.push({ tipo: 'aberta', enunciado: String(p.enunciado) });
+      } else {
+        if (!Array.isArray(p.alternativas) || p.alternativas.length < 2) {
+          alert(`A pergunta "${p.enunciado}" precisa de pelo menos 2 alternativas.`);
+          return;
+        }
+        const correta = Number.isInteger(p.correta) ? p.correta : 0;
+        if (correta < 0 || correta >= p.alternativas.length) {
+          alert(`"correta" da pergunta "${p.enunciado}" está fora do intervalo das alternativas.`);
+          return;
+        }
+        perguntasValidadas.push({ tipo: 'multipla', enunciado: String(p.enunciado), alternativas: p.alternativas.map(String), correta });
+      }
+    }
+    // Cai no builder normal pra revisar/editar antes de salvar — nada é
+    // gravado no Firestore só por ter sido importado.
+    provaEmEdicao = { id: null, titulo: String(dados.titulo), perguntas: perguntasValidadas };
+    renderBuilderProva();
+  };
+
   // Lê os valores digitados no formulário pro estado em memória, antes de
   // qualquer mudança estrutural (adicionar/remover pergunta ou
   // alternativa) — sem isso, re-renderizar o builder a cada tecla
@@ -785,7 +836,9 @@
   function renderBuilderProva() {
     const el = document.getElementById('builder-prova');
     if (!provaEmEdicao) {
-      el.innerHTML = '<button class="btn-add" style="width:100%" onclick="window.iniciarNovaProva()">+ Nova Prova</button>';
+      el.innerHTML = `
+        <button class="btn-add" style="width:100%" onclick="window.iniciarNovaProva()">+ Nova Prova</button>
+        <button class="btn-add-mini" style="width:100%" onclick="window.mostrarImportarJson()">📥 Importar JSON (gerado por IA)</button>`;
       return;
     }
     el.innerHTML = `
