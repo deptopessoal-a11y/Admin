@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Painel Admin – ACE Avaliações</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     :root {
@@ -116,6 +117,10 @@
       font-size:13px; padding:10px 14px; outline:none; transition:border-color 0.2s;
     }
     .add-row select:focus { border-color:var(--green); }
+    /* Sem isso, a LISTA aberta do <select> (não a caixa fechada) usa
+       fundo branco padrão do navegador e o texto (herdado branco) fica
+       invisível — precisa fixar fundo e cor explicitamente nas <option>. */
+    select option { background:var(--navy); color:var(--white); }
     .btn-add { background:var(--green); color:var(--navy); font-family:'Inter',sans-serif; font-size:12px; font-weight:700; padding:10px 18px; border:none; border-radius:8px; cursor:pointer; white-space:nowrap; transition:background 0.2s; }
     .btn-add:hover { background:var(--green-dark); }
     .btn-add-mini { background:rgba(90,230,32,0.10); border:1px dashed rgba(90,230,32,0.35); color:var(--green); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; padding:8px 14px; border-radius:8px; cursor:pointer; transition:background 0.2s; }
@@ -254,6 +259,12 @@
     .rel-alt.errada-escolhida { background:#fdecec; border-color:#f6c6c6; color:#c0392b; font-weight:600; }
     .rel-pergunta-aberta { border-left:3px solid #1a5cb5; }
     .rel-resposta-texto { background:#eef4fc; border:1px solid #cfe0f5; border-radius:8px; padding:10px 12px; font-size:12px; color:#1a1a2e; white-space:pre-wrap; }
+
+    /* Evita cortar um card/pergunta/linha no meio entre duas páginas —
+       vale tanto pra Imprimir/Salvar PDF do navegador quanto pro Baixar
+       PDF (html2pdf.js respeita essas mesmas regras no modo 'css'). */
+    .rel-pergunta, .rel-kpi, .rel-callout, .rel-capa, .rel-tabela tr { break-inside:avoid; page-break-inside:avoid; }
+    .rel-secao-titulo { break-after:avoid; page-break-after:avoid; }
 
     @media print {
       body > *:not(.relatorio-overlay) { display:none !important; }
@@ -427,7 +438,10 @@
 <div class="relatorio-overlay" id="secao-relatorio">
   <div class="relatorio-topbar">
     <button onclick="window.fecharRelatorio()">← Voltar ao Painel</button>
-    <button class="principal" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+    <div style="display:flex;gap:10px;">
+      <button onclick="window.print()">🖨️ Imprimir</button>
+      <button class="principal" id="btn-baixar-pdf" onclick="window.baixarRelatorioPdf()">⬇️ Baixar PDF</button>
+    </div>
   </div>
   <div class="relatorio-doc" id="relatorio-doc"></div>
 </div>
@@ -1148,6 +1162,8 @@
       </div>`;
   }
 
+  let relatorioAtual = null; // { nome, mes, ano } — usado no nome do arquivo do PDF
+
   window.gerarRelatorio = function() {
     const nome = document.getElementById('relatorio-colaborador').value;
     const mes  = parseInt(document.getElementById('relatorio-mes').value, 10);
@@ -1166,6 +1182,7 @@
       return;
     }
 
+    relatorioAtual = { nome, mes, ano };
     document.getElementById('relatorio-doc').innerHTML = montarHtmlRelatorio(nome, mes, ano, doPeriodo);
     document.getElementById('secao-relatorio').style.display = 'block';
     window.scrollTo(0, 0);
@@ -1173,6 +1190,58 @@
 
   window.fecharRelatorio = function() {
     document.getElementById('secao-relatorio').style.display = 'none';
+  };
+
+  // Gera o PDF direto (sem passar pelo diálogo de impressão do
+  // navegador), já paginado — html2pdf.js (html2canvas + jsPDF por
+  // baixo) respeita as regras de page-break-inside:avoid do CSS acima
+  // pra não cortar um card no meio entre duas páginas.
+  window.baixarRelatorioPdf = function() {
+    // Se a biblioteca não carregou (CDN fora do ar, bloqueio de rede
+    // local etc.), avisa em vez de travar o botão com um erro que o
+    // colaborador não entende — "Imprimir" continua funcionando sempre,
+    // porque usa só o navegador, sem depender de nada externo.
+    if (typeof html2pdf === 'undefined') {
+      alert('Não foi possível carregar o gerador de PDF (verifique sua internet). Use "🖨️ Imprimir" e escolha "Salvar como PDF" no diálogo do navegador.');
+      return;
+    }
+
+    const el  = document.getElementById('relatorio-doc');
+    const btn = document.getElementById('btn-baixar-pdf');
+    const nomeArquivo = relatorioAtual
+      ? `relatorio_${relatorioAtual.nome.replace(/\s+/g, '_')}_${NOMES_MESES[relatorioAtual.mes - 1]}_${relatorioAtual.ano}.pdf`
+      : 'relatorio.pdf';
+
+    btn.disabled = true;
+    const textoOriginal = btn.textContent;
+    btn.textContent = 'Gerando PDF...';
+
+    try {
+      html2pdf()
+        .set({
+          margin: 0,
+          filename: nomeArquivo,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'avoid-all'] }
+        })
+        .from(el)
+        .save()
+        .catch(e => {
+          console.error('[ACE Admin] Erro ao gerar PDF:', e);
+          alert('Erro ao gerar o PDF. Tente usar "🖨️ Imprimir" e escolher "Salvar como PDF".');
+        })
+        .finally(() => {
+          btn.disabled = false;
+          btn.textContent = textoOriginal;
+        });
+    } catch(e) {
+      console.error('[ACE Admin] Erro ao gerar PDF:', e);
+      alert('Erro ao gerar o PDF. Tente usar "🖨️ Imprimir" e escolher "Salvar como PDF".');
+      btn.disabled = false;
+      btn.textContent = textoOriginal;
+    }
   };
 
   // Popula o seletor de ano do relatório (ano atual + 1 ano pra trás/frente)
