@@ -279,14 +279,8 @@
 
     .prova-area { flex:1;display:flex;justify-content:center;padding:40px 24px;position:relative;
       background:
-        radial-gradient(ellipse 800px 500px at 12% 8%, rgba(26,92,181,0.30), transparent 60%),
-        radial-gradient(ellipse 700px 500px at 92% 92%, rgba(90,230,32,0.14), transparent 60%),
-        linear-gradient(160deg,rgba(13,27,75,0.97) 0%,rgba(6,10,30,0.99) 100%);
-    }
-    .prova-area::after {
-      content:''; position:absolute; inset:0; pointer-events:none;
-      background-image: linear-gradient(rgba(90,230,32,0.05) 1px,transparent 1px), linear-gradient(90deg,rgba(90,230,32,0.05) 1px,transparent 1px);
-      background-size: 48px 48px;
+        linear-gradient(160deg,rgba(13,27,75,0.35) 0%,rgba(8,14,40,0.50) 100%),
+        url('fundo-prova.png') center/cover no-repeat fixed;
     }
     .prova-area::before { content:''; position:absolute; inset:14px; border:1px solid rgba(90,230,32,0.32); border-radius:24px; pointer-events:none; z-index:1; }
     .prova-card {
