@@ -266,6 +266,49 @@
     .rel-pergunta, .rel-kpi, .rel-callout, .rel-capa, .rel-tabela tr { break-inside:avoid; page-break-inside:avoid; }
     .rel-secao-titulo { break-after:avoid; page-break-after:avoid; }
 
+    /* ── PREVIEW DE PROVA (visão do colaborador, sem anti-cola) ──
+       Classes copiadas do avalia-o (prova-area, prova-card,
+       pergunta-item, alternativa-opcao, resposta-aberta, btn-primary)
+       pra ficar visualmente idêntico ao que o colaborador vê de
+       verdade. Se o layout da prova mudar no avalia-o, replicar aqui
+       também pra não desalinhar. */
+    .preview-overlay { display:none; position:fixed; inset:0; z-index:2000; background:var(--navy); overflow-y:auto; }
+    .preview-topbar { position:sticky; top:0; z-index:10; display:flex; justify-content:space-between; align-items:center; padding:14px 28px; background:var(--navy); border-bottom:1px solid var(--border); }
+    .preview-topbar button { font-family:'Inter',sans-serif; font-size:13px; font-weight:700; padding:10px 18px; border-radius:8px; cursor:pointer; border:1px solid var(--border); background:rgba(255,255,255,0.08); color:var(--white); }
+    .preview-badge { background:rgba(240,192,64,0.12); border:1px solid rgba(240,192,64,0.35); color:#ffdc64; font-size:11px; font-weight:700; letter-spacing:0.5px; padding:7px 14px; border-radius:20px; }
+
+    .prova-area { flex:1;display:flex;justify-content:center;padding:40px 24px;position:relative;
+      background:
+        linear-gradient(160deg,rgba(13,27,75,0.50) 0%,rgba(8,14,40,0.62) 100%),
+        url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat fixed;
+    }
+    .prova-area::before { content:''; position:absolute; inset:14px; border:1px solid rgba(90,230,32,0.32); border-radius:24px; pointer-events:none; }
+    .prova-card {
+      background:rgba(13,27,75,0.72);backdrop-filter:blur(20px);
+      border:1px solid rgba(90,230,32,0.35);border-radius:20px;
+      max-width:760px;width:100%;padding:36px 40px;height:fit-content;position:relative;z-index:1;
+      box-shadow:0 0 0 1px rgba(90,230,32,0.10),0 24px 64px rgba(0,0,0,0.45),0 0 90px rgba(90,230,32,0.10);
+    }
+    .prova-card h2 { font-size:19px;font-weight:700;margin-bottom:28px;color:var(--white); }
+    .pergunta-item { margin-bottom:28px;padding-bottom:28px;border-bottom:1px solid var(--border); }
+    .pergunta-item:last-of-type { border-bottom:none;margin-bottom:8px;padding-bottom:0; }
+    .pergunta-enunciado { font-size:15px;font-weight:600;margin-bottom:16px;line-height:1.5;color:var(--white); }
+    .alternativa-opcao { display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:border-color 0.2s,background 0.2s; }
+    .alternativa-opcao:hover { background:rgba(255,255,255,0.04); }
+    .alternativa-opcao.selecionada { border-color:var(--green);background:rgba(90,230,32,0.08); }
+    .alternativa-opcao input { accent-color:var(--green);flex-shrink:0; }
+    .alternativa-opcao span { font-size:14px;color:rgba(255,255,255,0.85); }
+    .pergunta-item.pergunta-aberta { border-left:3px solid rgba(26,92,181,0.45); padding-left:16px; }
+    textarea.resposta-aberta {
+      width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(26,92,181,0.35);
+      border-radius:10px;color:var(--white);font-family:'Inter',sans-serif;font-size:14px;
+      padding:14px 16px;outline:none;resize:vertical;min-height:100px;transition:border-color 0.2s,background 0.2s;
+    }
+    textarea.resposta-aberta:focus { border-color:var(--blue);background:rgba(255,255,255,0.08); }
+    textarea.resposta-aberta::placeholder { color:rgba(255,255,255,0.28); }
+    .preview-overlay .btn-primary { display:block;width:100%;background:linear-gradient(135deg,var(--blue) 0%,var(--navy) 100%);border:1px solid rgba(90,230,32,0.20);color:var(--white);font-family:'Inter',sans-serif;font-size:15px;font-weight:700;letter-spacing:0.5px;padding:17px;border-radius:12px;cursor:pointer;transition:opacity 0.2s,transform 0.15s,box-shadow 0.2s;text-align:center; }
+    .preview-overlay .btn-primary:hover { opacity:0.92;transform:translateY(-2px);box-shadow:0 8px 24px rgba(26,92,181,0.35); }
+
     @media print {
       body > *:not(.relatorio-overlay) { display:none !important; }
       .relatorio-topbar { display:none !important; }
@@ -444,6 +487,21 @@
     </div>
   </div>
   <div class="relatorio-doc" id="relatorio-doc"></div>
+</div>
+
+<!-- PREVIEW DE PROVA (visão do colaborador, sem anti-cola nem gravação) -->
+<div class="preview-overlay" id="secao-preview-prova">
+  <div class="preview-topbar">
+    <button onclick="window.fecharPreviewProva()">← Fechar Preview</button>
+    <div class="preview-badge">👁️ MODO PREVIEW — sem bloqueio de troca de aba, nada é enviado ou salvo</div>
+  </div>
+  <div class="prova-area">
+    <div class="prova-card">
+      <h2 id="preview-titulo"></h2>
+      <div id="preview-perguntas"></div>
+      <button class="btn-primary" onclick="alert('Isso é uma pré-visualização — nada é enviado ou salvo.')">Enviar Respostas →</button>
+    </div>
+  </div>
 </div>
 
 <script type="module" defer>
@@ -935,6 +993,49 @@
     }
   };
 
+  // PREVIEW DE PROVA — mesma renderização visual que o colaborador vê no
+  // avalia-o (mesmas classes CSS), mas sem visibilitychange/blur (não
+  // bloqueia nada) e sem gravar resultado nenhum no Firestore.
+  window.abrirPreviewProva = function(id) {
+    const p = provasCache.find(p => p.id === id);
+    if (!p) return;
+    document.getElementById('preview-titulo').textContent = p.titulo;
+    document.getElementById('preview-perguntas').innerHTML = p.perguntas.map((pergunta, i) => {
+      if (pergunta.tipo === 'aberta') {
+        return `
+          <div class="pergunta-item pergunta-aberta">
+            <div class="pergunta-enunciado">${i + 1}. ${escapeAttr(pergunta.enunciado)}</div>
+            <textarea class="resposta-aberta" rows="4" placeholder="Digite sua resposta..."></textarea>
+          </div>`;
+      }
+      return `
+        <div class="pergunta-item">
+          <div class="pergunta-enunciado">${i + 1}. ${escapeAttr(pergunta.enunciado)}</div>
+          ${pergunta.alternativas.map((a, j) => `
+            <label class="alternativa-opcao" id="preview-opcao-${i}-${j}" onclick="window.marcarPreviewOpcao(${i},${j})">
+              <input type="radio" name="preview-pergunta-${i}">
+              <span>${escapeAttr(a)}</span>
+            </label>`).join('')}
+        </div>`;
+    }).join('');
+    document.getElementById('secao-preview-prova').style.display = 'block';
+    window.scrollTo(0, 0);
+  };
+
+  window.marcarPreviewOpcao = function(i, j) {
+    document.querySelectorAll(`[id^="preview-opcao-${i}-"]`).forEach(el => {
+      el.classList.remove('selecionada');
+      el.querySelector('input').checked = false;
+    });
+    const alvo = document.getElementById(`preview-opcao-${i}-${j}`);
+    alvo.classList.add('selecionada');
+    alvo.querySelector('input').checked = true;
+  };
+
+  window.fecharPreviewProva = function() {
+    document.getElementById('secao-preview-prova').style.display = 'none';
+  };
+
   function renderProvas(lista) {
     provasCache = lista;
     document.getElementById('lbl-provas').textContent = lista.length;
@@ -951,6 +1052,7 @@
             </div>
           </div>
           <div style="display:flex;gap:6px;">
+            <button class="btn-unlock" onclick="window.abrirPreviewProva('${p.id}')">👁️ Preview</button>
             <button class="btn-edit" onclick="window.editarProva('${p.id}')">✎ Editar</button>
             <button class="btn-remove" onclick="window.removerProva('${p.id}', '${p.titulo.replace(/'/g,"\\'")}')">Remover</button>
           </div>
