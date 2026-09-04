@@ -110,8 +110,27 @@
     }
     .add-row input:focus { border-color:var(--green); }
     .add-row input::placeholder { color:rgba(255,255,255,0.22); }
+    .add-row select {
+      flex:1; background:rgba(255,255,255,0.07); border:1px solid var(--border);
+      border-radius:8px; color:var(--white); font-family:'Inter',sans-serif;
+      font-size:13px; padding:10px 14px; outline:none; transition:border-color 0.2s;
+    }
+    .add-row select:focus { border-color:var(--green); }
     .btn-add { background:var(--green); color:var(--navy); font-family:'Inter',sans-serif; font-size:12px; font-weight:700; padding:10px 18px; border:none; border-radius:8px; cursor:pointer; white-space:nowrap; transition:background 0.2s; }
     .btn-add:hover { background:var(--green-dark); }
+    .btn-add-mini { background:rgba(90,230,32,0.10); border:1px dashed rgba(90,230,32,0.35); color:var(--green); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; padding:8px 14px; border-radius:8px; cursor:pointer; transition:background 0.2s; }
+    .btn-add-mini:hover { background:rgba(90,230,32,0.18); }
+    .btn-remove-mini { background:none; border:none; color:var(--red); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; cursor:pointer; padding:4px 8px; }
+    .btn-remove-mini:hover { text-decoration:underline; }
+
+    .pergunta-builder { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; }
+    .pergunta-builder-header { display:flex; align-items:center; justify-content:space-between; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--dim); margin-bottom:10px; }
+    .input-enunciado { width:100%; background:rgba(255,255,255,0.07); border:1px solid var(--border); border-radius:8px; color:var(--white); font-family:'Inter',sans-serif; font-size:13px; padding:10px 14px; outline:none; margin-bottom:10px; transition:border-color 0.2s; }
+    .input-enunciado:focus { border-color:var(--green); }
+    .alternativa-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+    .alternativa-row input[type="radio"] { accent-color:var(--green); flex-shrink:0; }
+    .alternativa-row input[type="text"] { flex:1; background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:6px; color:var(--white); font-family:'Inter',sans-serif; font-size:12px; padding:8px 10px; outline:none; transition:border-color 0.2s; }
+    .alternativa-row input[type="text"]:focus { border-color:var(--green); }
 
     .list-area { max-height:340px; overflow-y:auto; }
     .list-area::-webkit-scrollbar { width:4px; }
@@ -244,25 +263,18 @@
       </div>
     </div>
 
-    <!-- Formulários salvos (histórico de links nomeados) -->
+    <!-- Provas (perguntas de múltipla escolha, criadas aqui mesmo) -->
     <div class="panel-card">
       <div class="panel-card-header">
-        <h3>🔗 Formulários Salvos <span class="count" id="lbl-formularios">0</span></h3>
+        <h3>📝 Provas <span class="count" id="lbl-provas">0</span></h3>
       </div>
-      <div class="add-row">
-        <input type="text" id="input-form-titulo" placeholder="Nome do formulário (ex.: Avaliação Excel — Set/2026)">
-        <input type="text" id="input-form-link" placeholder="Link do JotForm (https://form.jotform.com/...)">
-        <div class="add-row-fields">
-          <button class="btn-add" style="width:100%" id="btn-salvar-formulario">+ Salvar Formulário</button>
-        </div>
+      <div class="add-row" id="builder-prova">
+        <button class="btn-add" style="width:100%" onclick="window.iniciarNovaProva()">+ Nova Prova</button>
       </div>
-      <div class="list-area" id="lista-formularios">
-        <div class="empty-state"><div class="es-icon">🔗</div>Nenhum formulário salvo ainda.</div>
+      <div class="list-area" id="lista-provas">
+        <div class="empty-state"><div class="es-icon">📝</div>Nenhuma prova criada ainda.</div>
       </div>
     </div>
-
-    <!-- Sugestão de links salvos pros campos de link abaixo -->
-    <datalist id="opcoes-formularios"></datalist>
 
     <!-- Grid -->
     <div class="painel-grid">
@@ -274,7 +286,9 @@
         </div>
         <div class="add-row">
           <input type="text" id="input-novo" placeholder="Nome completo do colaborador">
-          <input type="text" id="input-link" list="opcoes-formularios" placeholder="Link do JotForm (https://form.jotform.com/...)">
+          <select id="input-prova-colaborador" class="select-prova">
+            <option value="">— Selecione uma prova —</option>
+          </select>
           <div class="add-row-fields">
             <button class="btn-add" style="width:100%" id="btn-adicionar">+ Adicionar Colaborador</button>
           </div>
@@ -294,6 +308,16 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- Resultados -->
+    <div class="panel-card">
+      <div class="panel-card-header">
+        <h3>📊 Resultados <span class="count" id="lbl-resultados">0</span></h3>
+      </div>
+      <div class="list-area" id="lista-resultados">
+        <div class="empty-state"><div class="es-icon">📊</div>Nenhum resultado ainda.</div>
+      </div>
     </div>
   </div>
 
@@ -392,20 +416,33 @@
       const bloqueados = [];
       snapBlock.forEach(d => bloqueados.push({ id: d.id, ...d.data() }));
 
+      // renderAutorizados cria os <select class="select-prova"> (só com
+      // o placeholder); renderProvas, chamado logo em seguida, é quem
+      // popula as opções de verdade em todos eles.
       renderAutorizados(autorizados, bloqueados.map(b => b.id));
       renderBloqueados(bloqueados);
 
-      // Busca à parte: se as regras do Firestore ainda não tiverem sido
-      // atualizadas com a coleção 'formularios', isso não deve derrubar
-      // o resto do painel.
+      // Buscas à parte: se as regras do Firestore ainda não tiverem sido
+      // atualizadas com as coleções novas, isso não deve derrubar o
+      // resto do painel.
       try {
-        const snapForms = await getDocs(collection(db, 'formularios'));
-        const formularios = [];
-        snapForms.forEach(d => formularios.push({ id: d.id, ...d.data() }));
-        renderFormularios(formularios);
+        const snapProvas = await getDocs(collection(db, 'provas'));
+        const provas = [];
+        snapProvas.forEach(d => provas.push({ id: d.id, ...d.data() }));
+        renderProvas(provas);
       } catch(e) {
-        console.error('[ACE Admin] Erro ao carregar formulários salvos:', e);
-        renderFormularios([]);
+        console.error('[ACE Admin] Erro ao carregar provas:', e);
+        renderProvas([]);
+      }
+
+      try {
+        const snapResultados = await getDocs(collection(db, 'resultados'));
+        const resultados = [];
+        snapResultados.forEach(d => resultados.push({ id: d.id, ...d.data() }));
+        renderResultados(resultados);
+      } catch(e) {
+        console.error('[ACE Admin] Erro ao carregar resultados:', e);
+        renderResultados([]);
       }
 
       const total = autorizados.length;
@@ -438,9 +475,9 @@
       const bloq     = bloqueadosIds.includes(c.id);
       const nomeJs   = c.nome.replace(/'/g, "\\'");
       let statusTxt;
-      if (bloq)          statusTxt = '🔒 Bloqueado';
-      else if (!c.link)  statusTxt = '⚠️ Sem link cadastrado';
-      else               statusTxt = '✅ Disponível';
+      if (bloq)             statusTxt = '🔒 Bloqueado';
+      else if (!c.provaId)  statusTxt = '⚠️ Sem prova atribuída';
+      else                  statusTxt = '✅ Disponível';
       return `
         <div class="list-item">
           <div class="item-info">
@@ -451,13 +488,15 @@
             </div>
           </div>
           <div style="display:flex;gap:6px;">
-            <button class="btn-edit" onclick="window.alternarEdicaoLink('${c.id}')">✎ Link</button>
+            <button class="btn-edit" onclick="window.alternarEdicaoProva('${c.id}')">✎ Prova</button>
             <button class="btn-remove" onclick="window.removerColaborador('${c.id}', '${nomeJs}')">Remover</button>
           </div>
         </div>
         <div class="edit-link-row" id="edit-${c.id}" style="display:none;">
-          <input type="text" id="link-${c.id}" list="opcoes-formularios" value="${escapeAttr(c.link)}" placeholder="Link do JotForm (https://form.jotform.com/...)">
-          <button class="btn-add" onclick="window.salvarLink('${c.id}', '${nomeJs}')">Salvar</button>
+          <select id="prova-${c.id}" class="select-prova" data-provaid="${escapeAttr(c.provaId || '')}">
+            <option value="">— Selecione uma prova —</option>
+          </select>
+          <button class="btn-add" onclick="window.salvarProvaColaborador('${c.id}', '${nomeJs}')">Salvar</button>
         </div>`;
     }).join('');
   }
@@ -486,19 +525,18 @@
 
   // ADICIONAR
   window.adicionarColaborador = async function() {
-    const inputNome = document.getElementById('input-novo');
-    const inputLink = document.getElementById('input-link');
-    const nome = inputNome.value.trim();
-    const link = inputLink.value.trim();
+    const inputNome   = document.getElementById('input-novo');
+    const selectProva = document.getElementById('input-prova-colaborador');
+    const nome    = inputNome.value.trim();
+    const provaId = selectProva.value || null;
 
     if (nome.length < 3) { inputNome.focus(); alert('Digite o nome completo.'); return; }
-    if (!link.startsWith('http')) { inputLink.focus(); alert('Cole o link do JotForm corretamente.'); return; }
 
     loading(true, 'Adicionando colaborador...');
     try {
-      await setDoc(doc(db, 'autorizados', chave(nome)), { nome, link });
+      await setDoc(doc(db, 'autorizados', chave(nome)), { nome, provaId });
       inputNome.value = '';
-      inputLink.value = '';
+      selectProva.value = '';
       await carregarDados();
     } catch(e) {
       alert('Erro ao adicionar. Tente novamente.');
@@ -506,24 +544,22 @@
     }
   };
 
-  // EDITAR LINK (sem apagar/recriar o colaborador)
-  window.alternarEdicaoLink = function(id) {
+  // EDITAR PROVA ATRIBUÍDA (sem apagar/recriar o colaborador)
+  window.alternarEdicaoProva = function(id) {
     const row = document.getElementById('edit-' + id);
     const abrindo = row.style.display !== 'flex';
     row.style.display = abrindo ? 'flex' : 'none';
-    if (abrindo) document.getElementById('link-' + id).focus();
   };
 
-  window.salvarLink = async function(id, nome) {
-    const input = document.getElementById('link-' + id);
-    const link  = input.value.trim();
-    if (!link.startsWith('http')) { input.focus(); alert('Cole um link válido do JotForm.'); return; }
-    loading(true, 'Salvando link...');
+  window.salvarProvaColaborador = async function(id, nome) {
+    const select  = document.getElementById('prova-' + id);
+    const provaId = select.value || null;
+    loading(true, 'Salvando prova...');
     try {
-      await setDoc(doc(db, 'autorizados', id), { nome, link });
+      await setDoc(doc(db, 'autorizados', id), { nome, provaId });
       await carregarDados();
     } catch(e) {
-      alert('Erro ao salvar link.');
+      alert('Erro ao salvar prova.');
       loading(false);
     }
   };
@@ -554,58 +590,142 @@
     }
   };
 
-  // FORMULÁRIOS SALVOS (histórico de links nomeados, reaproveitáveis)
-  function renderFormularios(lista) {
-    const el       = document.getElementById('lista-formularios');
-    const datalist = document.getElementById('opcoes-formularios');
-    document.getElementById('lbl-formularios').textContent = lista.length;
+  // PROVAS (perguntas de múltipla escolha, criadas aqui mesmo)
+  let provasCache   = [];
+  let provaEmEdicao = null; // null = não estamos criando/editando nenhuma agora
 
-    if (!lista.length) {
-      el.innerHTML = '<div class="empty-state"><div class="es-icon">🔗</div>Nenhum formulário salvo ainda.</div>';
-      datalist.innerHTML = '';
-      return;
-    }
-    el.innerHTML = lista.map(f => `
-      <div class="list-item">
-        <div class="item-info">
-          <div>
-            <div class="item-name">${f.titulo}</div>
-            <div class="item-sub">${f.link}</div>
-          </div>
-        </div>
-        <button class="btn-remove" onclick="window.removerFormulario('${f.id}', '${f.titulo.replace(/'/g,"\\'")}')">Remover</button>
-      </div>`).join('');
-    datalist.innerHTML = lista.map(f =>
-      `<option value="${escapeAttr(f.link)}">${escapeAttr(f.titulo)}</option>`
-    ).join('');
+  function novaPerguntaVazia() {
+    return { enunciado: '', alternativas: ['', ''], correta: 0 };
   }
 
-  window.salvarFormulario = async function() {
-    const inputTitulo = document.getElementById('input-form-titulo');
-    const inputLink   = document.getElementById('input-form-link');
-    const titulo = inputTitulo.value.trim();
-    const link   = inputLink.value.trim();
+  window.iniciarNovaProva = function() {
+    provaEmEdicao = { id: null, titulo: '', perguntas: [novaPerguntaVazia()] };
+    renderBuilderProva();
+  };
 
-    if (titulo.length < 2) { inputTitulo.focus(); alert('Dê um nome pro formulário.'); return; }
-    if (!link.startsWith('http')) { inputLink.focus(); alert('Cole o link do JotForm corretamente.'); return; }
+  window.editarProva = function(id) {
+    const p = provasCache.find(p => p.id === id);
+    if (!p) return;
+    provaEmEdicao = { id: p.id, titulo: p.titulo, perguntas: JSON.parse(JSON.stringify(p.perguntas)) };
+    renderBuilderProva();
+  };
 
-    loading(true, 'Salvando formulário...');
+  window.cancelarEdicaoProva = function() {
+    provaEmEdicao = null;
+    renderBuilderProva();
+  };
+
+  // Lê os valores digitados no formulário pro estado em memória, antes de
+  // qualquer mudança estrutural (adicionar/remover pergunta ou
+  // alternativa) — sem isso, re-renderizar o builder a cada tecla
+  // digitada faria os campos perderem o foco a cada letra.
+  function coletarBuilderDoDOM() {
+    if (!provaEmEdicao) return;
+    const tituloEl = document.getElementById('prova-titulo');
+    if (tituloEl) provaEmEdicao.titulo = tituloEl.value;
+    document.querySelectorAll('.pergunta-builder').forEach((pEl, i) => {
+      const enEl = pEl.querySelector('.input-enunciado');
+      if (enEl) provaEmEdicao.perguntas[i].enunciado = enEl.value;
+      pEl.querySelectorAll('.input-alternativa').forEach((aEl, j) => {
+        provaEmEdicao.perguntas[i].alternativas[j] = aEl.value;
+      });
+      const marcada = pEl.querySelector(`input[name="correta-${i}"]:checked`);
+      if (marcada) provaEmEdicao.perguntas[i].correta = parseInt(marcada.value, 10);
+    });
+  }
+
+  window.adicionarPergunta = function() {
+    coletarBuilderDoDOM();
+    provaEmEdicao.perguntas.push(novaPerguntaVazia());
+    renderBuilderProva();
+  };
+
+  window.removerPergunta = function(i) {
+    coletarBuilderDoDOM();
+    provaEmEdicao.perguntas.splice(i, 1);
+    renderBuilderProva();
+  };
+
+  window.adicionarAlternativa = function(i) {
+    coletarBuilderDoDOM();
+    provaEmEdicao.perguntas[i].alternativas.push('');
+    renderBuilderProva();
+  };
+
+  window.removerAlternativa = function(i, j) {
+    coletarBuilderDoDOM();
+    const p = provaEmEdicao.perguntas[i];
+    p.alternativas.splice(j, 1);
+    if (p.correta >= p.alternativas.length || p.correta === j) p.correta = 0;
+    else if (p.correta > j) p.correta -= 1;
+    renderBuilderProva();
+  };
+
+  function renderBuilderProva() {
+    const el = document.getElementById('builder-prova');
+    if (!provaEmEdicao) {
+      el.innerHTML = '<button class="btn-add" style="width:100%" onclick="window.iniciarNovaProva()">+ Nova Prova</button>';
+      return;
+    }
+    el.innerHTML = `
+      <input type="text" id="prova-titulo" placeholder="Título da prova (ex.: Avaliação Excel — Set/2026)" value="${escapeAttr(provaEmEdicao.titulo)}">
+      ${provaEmEdicao.perguntas.map((p, i) => `
+        <div class="pergunta-builder">
+          <div class="pergunta-builder-header">
+            <span>Pergunta ${i + 1}</span>
+            ${provaEmEdicao.perguntas.length > 1 ? `<button type="button" class="btn-remove-mini" onclick="window.removerPergunta(${i})">✕ remover pergunta</button>` : ''}
+          </div>
+          <input type="text" class="input-enunciado" placeholder="Enunciado da pergunta" value="${escapeAttr(p.enunciado)}">
+          ${p.alternativas.map((a, j) => `
+            <div class="alternativa-row">
+              <input type="radio" name="correta-${i}" value="${j}" ${p.correta === j ? 'checked' : ''} title="Marcar como resposta correta">
+              <input type="text" class="input-alternativa" placeholder="Alternativa ${j + 1}" value="${escapeAttr(a)}">
+              ${p.alternativas.length > 2 ? `<button type="button" class="btn-remove-mini" onclick="window.removerAlternativa(${i},${j})">✕</button>` : ''}
+            </div>`).join('')}
+          <button type="button" class="btn-add-mini" onclick="window.adicionarAlternativa(${i})">+ alternativa</button>
+        </div>`).join('')}
+      <div class="add-row-fields">
+        <button type="button" class="btn-add-mini" style="width:100%" onclick="window.adicionarPergunta()">+ Adicionar Pergunta</button>
+      </div>
+      <div class="add-row-fields">
+        <button class="btn-add" style="width:100%" onclick="window.salvarProva()">💾 Salvar Prova</button>
+        <button class="btn-remove" style="width:100%" onclick="window.cancelarEdicaoProva()">Cancelar</button>
+      </div>`;
+  }
+
+  window.salvarProva = async function() {
+    coletarBuilderDoDOM();
+    const titulo = provaEmEdicao.titulo.trim();
+    if (titulo.length < 2) { alert('Dê um título pra prova.'); return; }
+    for (const p of provaEmEdicao.perguntas) {
+      if (!p.enunciado.trim()) { alert('Preencha o enunciado de todas as perguntas.'); return; }
+      if (p.alternativas.some(a => !a.trim())) { alert('Preencha todas as alternativas (ou remova as vazias).'); return; }
+    }
+    loading(true, 'Salvando prova...');
     try {
-      await addDoc(collection(db, 'formularios'), { titulo, link });
-      inputTitulo.value = '';
-      inputLink.value   = '';
+      const dados = {
+        titulo,
+        perguntas: provaEmEdicao.perguntas.map(p => ({
+          enunciado: p.enunciado.trim(),
+          alternativas: p.alternativas.map(a => a.trim()),
+          correta: p.correta
+        }))
+      };
+      if (provaEmEdicao.id) await setDoc(doc(db, 'provas', provaEmEdicao.id), dados);
+      else                  await addDoc(collection(db, 'provas'), dados);
+      provaEmEdicao = null;
       await carregarDados();
     } catch(e) {
-      alert('Erro ao salvar formulário.');
+      alert('Erro ao salvar prova.');
       loading(false);
     }
   };
 
-  window.removerFormulario = async function(id, titulo) {
-    if (!confirm(`Remover "${titulo}" da lista de formulários salvos? (isso não afeta colaboradores que já usam esse link)`)) return;
+  window.removerProva = async function(id, titulo) {
+    if (!confirm(`Remover a prova "${titulo}"? Colaboradores atribuídos a ela ficarão sem prova atribuída.`)) return;
     loading(true, 'Removendo...');
     try {
-      await deleteDoc(doc(db, 'formularios', id));
+      await deleteDoc(doc(db, 'provas', id));
       await carregarDados();
     } catch(e) {
       alert('Erro ao remover. Tente novamente.');
@@ -613,11 +733,69 @@
     }
   };
 
+  function renderProvas(lista) {
+    provasCache = lista;
+    document.getElementById('lbl-provas').textContent = lista.length;
+    const el = document.getElementById('lista-provas');
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty-state"><div class="es-icon">📝</div>Nenhuma prova criada ainda.</div>';
+    } else {
+      el.innerHTML = lista.map(p => `
+        <div class="list-item">
+          <div class="item-info">
+            <div>
+              <div class="item-name">${p.titulo}</div>
+              <div class="item-sub">${p.perguntas.length} pergunta${p.perguntas.length === 1 ? '' : 's'}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-edit" onclick="window.editarProva('${p.id}')">✎ Editar</button>
+            <button class="btn-remove" onclick="window.removerProva('${p.id}', '${p.titulo.replace(/'/g,"\\'")}')">Remover</button>
+          </div>
+        </div>`).join('');
+    }
+    // Popula todo <select class="select-prova"> da página (adicionar
+    // colaborador + cada linha de edição), preservando a prova já
+    // atribuída via o atributo data-provaid.
+    const opcoes = '<option value="">— Selecione uma prova —</option>' +
+      lista.map(p => `<option value="${p.id}">${escapeAttr(p.titulo)}</option>`).join('');
+    document.querySelectorAll('.select-prova').forEach(sel => {
+      const desejado = sel.dataset.provaid || sel.value || '';
+      sel.innerHTML = opcoes;
+      if ([...sel.options].some(o => o.value === desejado)) sel.value = desejado;
+    });
+  }
+
+  // RESULTADOS
+  function renderResultados(lista) {
+    document.getElementById('lbl-resultados').textContent = lista.length;
+    const el = document.getElementById('lista-resultados');
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty-state"><div class="es-icon">📊</div>Nenhum resultado ainda.</div>';
+      return;
+    }
+    const ordenado = [...lista].sort((a, b) => (b.enviadoEm || '').localeCompare(a.enviadoEm || ''));
+    el.innerHTML = ordenado.map(r => {
+      const data = r.enviadoEm ? new Date(r.enviadoEm).toLocaleString('pt-BR') : 'Data desconhecida';
+      const pct  = r.total ? Math.round((r.acertos / r.total) * 100) : 0;
+      return `
+        <div class="list-item">
+          <div class="item-info">
+            <div class="item-avatar">${iniciais(r.nome || '?')}</div>
+            <div>
+              <div class="item-name">${r.nome}</div>
+              <div class="item-sub">${r.tituloProva || 'Prova'} — ${data}</div>
+            </div>
+          </div>
+          <div style="font-weight:700;font-size:14px;color:${pct >= 70 ? 'var(--green)' : 'var(--red)'}">${r.acertos}/${r.total} (${pct}%)</div>
+        </div>`;
+    }).join('');
+  }
+
   // ── Listeners de botão (compatível com type="module") ──
   document.getElementById('btn-entrar')   ?.addEventListener('click', () => window.fazerLogin());
   document.getElementById('btn-logout')   ?.addEventListener('click', () => window.logout());
   document.getElementById('btn-adicionar')?.addEventListener('click', () => window.adicionarColaborador());
-  document.getElementById('btn-salvar-formulario')?.addEventListener('click', () => window.salvarFormulario());
 
   document.getElementById('input-email')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') window.fazerLogin();
@@ -627,12 +805,6 @@
   });
   document.getElementById('input-novo')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') window.adicionarColaborador();
-  });
-  document.getElementById('input-form-titulo')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') window.salvarFormulario();
-  });
-  document.getElementById('input-form-link')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter') window.salvarFormulario();
   });
 </script>
 </body>
