@@ -125,6 +125,10 @@
 
     .pergunta-builder { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; }
     .pergunta-builder-header { display:flex; align-items:center; justify-content:space-between; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--dim); margin-bottom:10px; }
+    .tipo-pergunta-row { display:flex; gap:16px; margin-bottom:10px; font-size:12px; color:var(--dim); }
+    .tipo-pergunta-row label { display:flex; align-items:center; gap:6px; cursor:pointer; }
+    .tipo-pergunta-row input[type="radio"] { accent-color:#6ab0ff; }
+    .aberta-aviso { font-size:11.5px; color:var(--dim); font-style:italic; margin-bottom:4px; }
     .input-enunciado { width:100%; background:rgba(255,255,255,0.07); border:1px solid var(--border); border-radius:8px; color:var(--white); font-family:'Inter',sans-serif; font-size:13px; padding:10px 14px; outline:none; margin-bottom:10px; transition:border-color 0.2s; }
     .input-enunciado:focus { border-color:var(--green); }
     .alternativa-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
@@ -194,6 +198,8 @@
     .resultado-alt { padding:7px 10px; border:1px solid var(--border); border-radius:7px; margin-bottom:5px; font-size:12px; }
     .resultado-alt.certa { border-color:rgba(90,230,32,0.4); background:rgba(90,230,32,0.08); color:var(--green); }
     .resultado-alt.errada { border-color:rgba(255,107,107,0.4); background:rgba(255,107,107,0.08); color:var(--red); }
+    .resultado-pergunta.resultado-aberta { border-left:3px solid rgba(106,176,255,0.5); }
+    .resposta-texto { background:rgba(106,176,255,0.08); border:1px solid rgba(106,176,255,0.25); border-radius:8px; padding:10px 12px; font-size:12px; color:rgba(255,255,255,0.85); white-space:pre-wrap; }
 
     /* ── RELATÓRIO (documento com identidade visual própria, clara) ── */
     .relatorio-overlay { display:none; position:fixed; inset:0; z-index:2000; background:#f3f4f8; overflow-y:auto; }
@@ -246,6 +252,8 @@
     .rel-alt { padding:7px 11px; border-radius:8px; font-size:12px; margin-bottom:5px; border:1px solid #eee; }
     .rel-alt.correta { background:#e8f7ea; border-color:#b9e6c0; color:#1f8a3b; font-weight:600; }
     .rel-alt.errada-escolhida { background:#fdecec; border-color:#f6c6c6; color:#c0392b; font-weight:600; }
+    .rel-pergunta-aberta { border-left:3px solid #1a5cb5; }
+    .rel-resposta-texto { background:#eef4fc; border:1px solid #cfe0f5; border-radius:8px; padding:10px 12px; font-size:12px; color:#1a1a2e; white-space:pre-wrap; }
 
     @media print {
       body > *:not(.relatorio-overlay) { display:none !important; }
@@ -694,8 +702,21 @@
   let provaEmEdicao = null; // null = não estamos criando/editando nenhuma agora
 
   function novaPerguntaVazia() {
-    return { enunciado: '', alternativas: ['', ''], correta: 0 };
+    return { tipo: 'multipla', enunciado: '', alternativas: ['', ''], correta: 0 };
   }
+
+  // Alterna entre múltipla escolha e pergunta aberta (dissertativa) —
+  // preserva as alternativas já digitadas caso volte pra múltipla escolha.
+  window.mudarTipoPergunta = function(i, tipo) {
+    coletarBuilderDoDOM();
+    const p = provaEmEdicao.perguntas[i];
+    p.tipo = tipo;
+    if (tipo === 'multipla' && !p.alternativas) {
+      p.alternativas = ['', ''];
+      p.correta = 0;
+    }
+    renderBuilderProva();
+  };
 
   window.iniciarNovaProva = function() {
     provaEmEdicao = { id: null, titulo: '', perguntas: [novaPerguntaVazia()] };
@@ -725,6 +746,7 @@
     document.querySelectorAll('.pergunta-builder').forEach((pEl, i) => {
       const enEl = pEl.querySelector('.input-enunciado');
       if (enEl) provaEmEdicao.perguntas[i].enunciado = enEl.value;
+      if (provaEmEdicao.perguntas[i].tipo === 'aberta') return; // sem alternativas pra coletar
       pEl.querySelectorAll('.input-alternativa').forEach((aEl, j) => {
         provaEmEdicao.perguntas[i].alternativas[j] = aEl.value;
       });
@@ -774,14 +796,22 @@
             <span>Pergunta ${i + 1}</span>
             ${provaEmEdicao.perguntas.length > 1 ? `<button type="button" class="btn-remove-mini" onclick="window.removerPergunta(${i})">✕ remover pergunta</button>` : ''}
           </div>
+          <div class="tipo-pergunta-row">
+            <label><input type="radio" name="tipo-${i}" ${p.tipo !== 'aberta' ? 'checked' : ''} onchange="window.mudarTipoPergunta(${i},'multipla')"> Múltipla escolha</label>
+            <label><input type="radio" name="tipo-${i}" ${p.tipo === 'aberta' ? 'checked' : ''} onchange="window.mudarTipoPergunta(${i},'aberta')"> Pergunta aberta</label>
+          </div>
           <input type="text" class="input-enunciado" placeholder="Enunciado da pergunta" value="${escapeAttr(p.enunciado)}">
-          ${p.alternativas.map((a, j) => `
-            <div class="alternativa-row">
-              <input type="radio" name="correta-${i}" value="${j}" ${p.correta === j ? 'checked' : ''} title="Marcar como resposta correta">
-              <input type="text" class="input-alternativa" placeholder="Alternativa ${j + 1}" value="${escapeAttr(a)}">
-              ${p.alternativas.length > 2 ? `<button type="button" class="btn-remove-mini" onclick="window.removerAlternativa(${i},${j})">✕</button>` : ''}
-            </div>`).join('')}
-          <button type="button" class="btn-add-mini" onclick="window.adicionarAlternativa(${i})">+ alternativa</button>
+          ${p.tipo === 'aberta' ? `
+            <p class="aberta-aviso">O colaborador responde em texto livre — não entra na correção automática.</p>
+          ` : `
+            ${p.alternativas.map((a, j) => `
+              <div class="alternativa-row">
+                <input type="radio" name="correta-${i}" value="${j}" ${p.correta === j ? 'checked' : ''} title="Marcar como resposta correta">
+                <input type="text" class="input-alternativa" placeholder="Alternativa ${j + 1}" value="${escapeAttr(a)}">
+                ${p.alternativas.length > 2 ? `<button type="button" class="btn-remove-mini" onclick="window.removerAlternativa(${i},${j})">✕</button>` : ''}
+              </div>`).join('')}
+            <button type="button" class="btn-add-mini" onclick="window.adicionarAlternativa(${i})">+ alternativa</button>
+          `}
         </div>`).join('')}
       <div class="add-row-fields">
         <button type="button" class="btn-add-mini" style="width:100%" onclick="window.adicionarPergunta()">+ Adicionar Pergunta</button>
@@ -798,17 +828,23 @@
     if (titulo.length < 2) { alert('Dê um título pra prova.'); return; }
     for (const p of provaEmEdicao.perguntas) {
       if (!p.enunciado.trim()) { alert('Preencha o enunciado de todas as perguntas.'); return; }
-      if (p.alternativas.some(a => !a.trim())) { alert('Preencha todas as alternativas (ou remova as vazias).'); return; }
+      if (p.tipo !== 'aberta' && p.alternativas.some(a => !a.trim())) {
+        alert('Preencha todas as alternativas (ou remova as vazias).'); return;
+      }
     }
     loading(true, 'Salvando prova...');
     try {
       const dados = {
         titulo,
-        perguntas: provaEmEdicao.perguntas.map(p => ({
-          enunciado: p.enunciado.trim(),
-          alternativas: p.alternativas.map(a => a.trim()),
-          correta: p.correta
-        }))
+        perguntas: provaEmEdicao.perguntas.map(p => {
+          if (p.tipo === 'aberta') return { tipo: 'aberta', enunciado: p.enunciado.trim() };
+          return {
+            tipo: 'multipla',
+            enunciado: p.enunciado.trim(),
+            alternativas: p.alternativas.map(a => a.trim()),
+            correta: p.correta
+          };
+        })
       };
       if (provaEmEdicao.id) await setDoc(doc(db, 'provas', provaEmEdicao.id), dados);
       else                  await addDoc(collection(db, 'provas'), dados);
@@ -872,17 +908,26 @@
     if (!r.perguntas || !r.perguntas.length) {
       return '<p style="padding:4px 0;color:var(--dim);font-size:12px;">Detalhe não disponível (resultado enviado antes desta função existir).</p>';
     }
-    return r.perguntas.map((p, i) => `
-      <div class="resultado-pergunta">
-        <div class="rp-enun">${i + 1}. ${p.enunciado}</div>
-        ${p.alternativas.map((a, j) => {
-          let cls = '';
-          if (j === p.correta) cls = 'certa';
-          else if (j === p.escolhida) cls = 'errada';
-          const marca = j === p.escolhida && j !== p.correta ? ' ← marcou' : (j === p.correta ? ' ✓ correta' : '');
-          return `<div class="resultado-alt ${cls}">${a}${marca}</div>`;
-        }).join('')}
-      </div>`).join('');
+    return r.perguntas.map((p, i) => {
+      if (p.tipo === 'aberta') {
+        return `
+          <div class="resultado-pergunta resultado-aberta">
+            <div class="rp-enun">${i + 1}. ${p.enunciado} <span style="font-weight:400;color:var(--dim);">(pergunta aberta)</span></div>
+            <div class="resposta-texto">${escapeAttr(p.resposta || '(sem resposta)').replace(/\n/g, '<br>')}</div>
+          </div>`;
+      }
+      return `
+        <div class="resultado-pergunta">
+          <div class="rp-enun">${i + 1}. ${p.enunciado}</div>
+          ${p.alternativas.map((a, j) => {
+            let cls = '';
+            if (j === p.correta) cls = 'certa';
+            else if (j === p.escolhida) cls = 'errada';
+            const marca = j === p.escolhida && j !== p.correta ? ' ← marcou' : (j === p.correta ? ' ✓ correta' : '');
+            return `<div class="resultado-alt ${cls}">${a}${marca}</div>`;
+          }).join('')}
+        </div>`;
+    }).join('');
   }
 
   function renderResultados(lista) {
@@ -941,45 +986,62 @@
 
   function montarHtmlRelatorio(nome, mes, ano, resultados) {
     const total = resultados.length;
-    const percentuais = resultados.map(r => r.total ? (r.acertos / r.total) * 100 : 0);
-    const mediaAcertos = percentuais.reduce((s, p) => s + p, 0) / total;
-    const melhor = Math.max(...percentuais);
-    const pior   = Math.min(...percentuais);
-    const aprovados = percentuais.filter(p => p >= 70).length;
+    // Só entram na média/melhor/pior as provas com pelo menos uma pergunta
+    // de múltipla escolha (total > 0) — uma prova só com perguntas abertas
+    // não tem nota, e contar como 0% distorceria os números.
+    const comNota = resultados.filter(r => r.total > 0);
+    const percentuaisComNota = comNota.map(r => (r.acertos / r.total) * 100);
+    const mediaAcertos = percentuaisComNota.length ? percentuaisComNota.reduce((s, p) => s + p, 0) / percentuaisComNota.length : null;
+    const melhor = percentuaisComNota.length ? Math.max(...percentuaisComNota) : null;
+    const pior   = percentuaisComNota.length ? Math.min(...percentuaisComNota) : null;
+    const aprovados = percentuaisComNota.filter(p => p >= 70).length;
     const dataEmissao = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const fmtPct = v => v === null ? '—' : v.toFixed(0) + '%';
 
-    const linhasTabela = resultados.map((r, i) => {
-      const pct  = Math.round(percentuais[i]);
+    const linhasTabela = resultados.map(r => {
+      const temNota = r.total > 0;
+      const pct  = temNota ? Math.round((r.acertos / r.total) * 100) : null;
       const data = r.enviadoEm ? new Date(r.enviadoEm).toLocaleDateString('pt-BR') : '—';
       return `
         <tr>
           <td>${escapeAttr(r.tituloProva || 'Prova')}</td>
           <td>${data}</td>
-          <td>${r.acertos}/${r.total}</td>
-          <td style="color:${corPorPct(pct)};font-weight:700;">${pct}%</td>
-          <td><div class="rel-barra-fundo"><div class="rel-barra-preenchida" style="width:${pct}%;background:${corPorPct(pct)};"></div></div></td>
+          <td>${temNota ? `${r.acertos}/${r.total}` : '—'}</td>
+          <td style="${temNota ? `color:${corPorPct(pct)};font-weight:700;` : 'color:#999;'}">${temNota ? pct + '%' : '—'}</td>
+          <td><div class="rel-barra-fundo">${temNota ? `<div class="rel-barra-preenchida" style="width:${pct}%;background:${corPorPct(pct)};"></div>` : ''}</div></td>
         </tr>`;
     }).join('');
 
     const detalhePerguntas = resultados.map(r => `
       <div class="rel-secao-titulo" style="font-size:14.5px;margin-top:22px;">📝 ${escapeAttr(r.tituloProva || 'Prova')} — ${r.enviadoEm ? new Date(r.enviadoEm).toLocaleDateString('pt-BR') : ''}</div>
-      ${(r.perguntas || []).map((p, i) => `
-        <div class="rel-pergunta">
-          <div class="enun">${i + 1}. ${escapeAttr(p.enunciado)}</div>
-          ${p.alternativas.map((a, j) => {
-            let cls = '';
-            if (j === p.correta) cls = 'correta';
-            else if (j === p.escolhida) cls = 'errada-escolhida';
-            const marca = j === p.escolhida && j !== p.correta ? ' (marcado pelo colaborador)' : (j === p.correta ? ' (resposta correta)' : '');
-            return `<div class="rel-alt ${cls}">${escapeAttr(a)}${marca}</div>`;
-          }).join('')}
-        </div>`).join('') || '<p style="font-size:12.5px;color:#888;">Detalhe não disponível para esta prova.</p>'}
+      ${(r.perguntas || []).map((p, i) => {
+        if (p.tipo === 'aberta') {
+          return `
+            <div class="rel-pergunta rel-pergunta-aberta">
+              <div class="enun">${i + 1}. ${escapeAttr(p.enunciado)} <span style="font-weight:400;color:#888;font-size:11px;">(resposta dissertativa)</span></div>
+              <div class="rel-resposta-texto">${escapeAttr(p.resposta || '(sem resposta)').replace(/\n/g, '<br>')}</div>
+            </div>`;
+        }
+        return `
+          <div class="rel-pergunta">
+            <div class="enun">${i + 1}. ${escapeAttr(p.enunciado)}</div>
+            ${p.alternativas.map((a, j) => {
+              let cls = '';
+              if (j === p.correta) cls = 'correta';
+              else if (j === p.escolhida) cls = 'errada-escolhida';
+              const marca = j === p.escolhida && j !== p.correta ? ' (marcado pelo colaborador)' : (j === p.correta ? ' (resposta correta)' : '');
+              return `<div class="rel-alt ${cls}">${escapeAttr(a)}${marca}</div>`;
+            }).join('')}
+          </div>`;
+      }).join('') || '<p style="font-size:12.5px;color:#888;">Detalhe não disponível para esta prova.</p>'}
     `).join('');
 
-    const resumoTexto = `${escapeAttr(nome)} realizou <b>${total}</b> avaliaç${total === 1 ? 'ão' : 'ões'} em ${NOMES_MESES[mes - 1]} de ${ano}, com aproveitamento médio de <b>${mediaAcertos.toFixed(1)}%</b>. ` +
-      (aprovados === total ? 'Todas as avaliações atingiram a faixa de aprovação (≥70%).' :
+    const resumoTexto = `${escapeAttr(nome)} realizou <b>${total}</b> avaliaç${total === 1 ? 'ão' : 'ões'} em ${NOMES_MESES[mes - 1]} de ${ano}` +
+      (mediaAcertos !== null ? `, com aproveitamento médio de <b>${mediaAcertos.toFixed(1)}%</b>. ` : '. ') +
+      (percentuaisComNota.length === 0 ? 'Nenhuma das provas do período teve correção automática (só perguntas abertas).' :
+       aprovados === percentuaisComNota.length ? 'Todas as avaliações corrigidas automaticamente atingiram a faixa de aprovação (≥70%).' :
        aprovados === 0 ? 'Nenhuma avaliação atingiu a faixa de aprovação (≥70%) no período.' :
-       `${aprovados} de ${total} avaliaç${total === 1 ? 'ão' : 'ões'} atingiram a faixa de aprovação (≥70%).`);
+       `${aprovados} de ${percentuaisComNota.length} avaliaç${percentuaisComNota.length === 1 ? 'ão' : 'ões'} corrigida${percentuaisComNota.length === 1 ? '' : 's'} automaticamente atingiram a faixa de aprovação (≥70%).`);
 
     return `
       <div class="rel-capa">
@@ -996,30 +1058,30 @@
         </div>
         <div class="rel-stat-strip">
           <div class="stat"><b>${total}</b><span>Provas realizadas</span></div>
-          <div class="stat"><b>${mediaAcertos.toFixed(0)}%</b><span>Média de acertos</span></div>
-          <div class="stat"><b>${melhor.toFixed(0)}%</b><span>Melhor nota</span></div>
-          <div class="stat"><b>${pior.toFixed(0)}%</b><span>Menor nota</span></div>
+          <div class="stat"><b>${fmtPct(mediaAcertos)}</b><span>Média de acertos</span></div>
+          <div class="stat"><b>${fmtPct(melhor)}</b><span>Melhor nota</span></div>
+          <div class="stat"><b>${fmtPct(pior)}</b><span>Menor nota</span></div>
         </div>
       </div>
       <div class="rel-corpo">
         <div class="rel-secao-titulo">📋 Resumo</div>
         <p style="font-size:13.5px;color:#333;line-height:1.7;margin-bottom:18px;">${resumoTexto}</p>
 
-        ${aprovados < total ? `
+        ${percentuaisComNota.length && aprovados < percentuaisComNota.length ? `
         <div class="rel-callout atencao">
           <span style="font-size:20px;">⚠️</span>
-          <div><b>Ponto de atenção</b><p>${total - aprovados} de ${total} avaliaç${(total - aprovados) === 1 ? 'ão ficou' : 'ões ficaram'} abaixo de 70% de aproveitamento no período.</p></div>
-        </div>` : `
+          <div><b>Ponto de atenção</b><p>${percentuaisComNota.length - aprovados} de ${percentuaisComNota.length} avaliaç${(percentuaisComNota.length - aprovados) === 1 ? 'ão ficou' : 'ões ficaram'} abaixo de 70% de aproveitamento no período.</p></div>
+        </div>` : percentuaisComNota.length ? `
         <div class="rel-callout ok">
           <span style="font-size:20px;">✅</span>
-          <div><b>Bom desempenho</b><p>Todas as avaliações do período atingiram a faixa de aprovação.</p></div>
-        </div>`}
+          <div><b>Bom desempenho</b><p>Todas as avaliações corrigidas automaticamente atingiram a faixa de aprovação.</p></div>
+        </div>` : ''}
 
         <div class="rel-secao-titulo">📊 Indicadores</div>
         <div class="rel-kpi-grid">
           <div class="rel-kpi"><b style="color:#1a5cb5;">${total}</b><span>Provas realizadas</span></div>
-          <div class="rel-kpi"><b style="color:${corPorPct(mediaAcertos)};">${mediaAcertos.toFixed(1)}%</b><span>Média de acertos</span></div>
-          <div class="rel-kpi"><b style="color:#1f8a3b;">${aprovados}/${total}</b><span>Aprovações (≥70%)</span></div>
+          <div class="rel-kpi"><b style="color:${mediaAcertos === null ? '#999' : corPorPct(mediaAcertos)};">${fmtPct(mediaAcertos)}</b><span>Média de acertos</span></div>
+          <div class="rel-kpi"><b style="color:#1f8a3b;">${percentuaisComNota.length ? `${aprovados}/${percentuaisComNota.length}` : '—'}</b><span>Aprovações (≥70%)</span></div>
         </div>
 
         <div class="rel-secao-titulo">🗂️ Provas no Período</div>
