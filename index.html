@@ -125,6 +125,10 @@
 
     .pergunta-builder { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:10px; }
     .pergunta-builder-header { display:flex; align-items:center; justify-content:space-between; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--dim); margin-bottom:10px; }
+    .tipo-pergunta-row { display:flex; gap:16px; margin-bottom:10px; font-size:12px; color:var(--dim); }
+    .tipo-pergunta-row label { display:flex; align-items:center; gap:6px; cursor:pointer; }
+    .tipo-pergunta-row input[type="radio"] { accent-color:#6ab0ff; }
+    .aberta-aviso { font-size:11.5px; color:var(--dim); font-style:italic; margin-bottom:4px; }
     .input-enunciado { width:100%; background:rgba(255,255,255,0.07); border:1px solid var(--border); border-radius:8px; color:var(--white); font-family:'Inter',sans-serif; font-size:13px; padding:10px 14px; outline:none; margin-bottom:10px; transition:border-color 0.2s; }
     .input-enunciado:focus { border-color:var(--green); }
     .alternativa-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
@@ -186,6 +190,78 @@
 
     footer { background:rgba(13,27,75,0.70); backdrop-filter:blur(10px); border-top:1px solid var(--border); text-align:center; font-size:11.5px; color:var(--dim); padding:14px 20px; }
     footer strong { color:rgba(255,255,255,0.70); }
+
+    /* Detalhe de resultado (questão por questão) */
+    .resultado-detalhe { padding:12px 24px 16px; border-bottom:1px solid rgba(255,255,255,0.05); }
+    .resultado-pergunta { background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:8px; }
+    .resultado-pergunta .rp-enun { font-size:12.5px; font-weight:600; margin-bottom:8px; }
+    .resultado-alt { padding:7px 10px; border:1px solid var(--border); border-radius:7px; margin-bottom:5px; font-size:12px; }
+    .resultado-alt.certa { border-color:rgba(90,230,32,0.4); background:rgba(90,230,32,0.08); color:var(--green); }
+    .resultado-alt.errada { border-color:rgba(255,107,107,0.4); background:rgba(255,107,107,0.08); color:var(--red); }
+    .resultado-pergunta.resultado-aberta { border-left:3px solid rgba(106,176,255,0.5); }
+    .resposta-texto { background:rgba(106,176,255,0.08); border:1px solid rgba(106,176,255,0.25); border-radius:8px; padding:10px 12px; font-size:12px; color:rgba(255,255,255,0.85); white-space:pre-wrap; }
+
+    /* ── RELATÓRIO (documento com identidade visual própria, clara) ── */
+    .relatorio-overlay { display:none; position:fixed; inset:0; z-index:2000; background:#f3f4f8; overflow-y:auto; }
+    .relatorio-topbar { position:sticky; top:0; z-index:10; display:flex; justify-content:space-between; align-items:center; padding:14px 28px; background:var(--navy); box-shadow:0 2px 12px rgba(0,0,0,0.3); }
+    .relatorio-topbar button { font-family:'Inter',sans-serif; font-size:13px; font-weight:700; padding:10px 18px; border-radius:8px; cursor:pointer; border:1px solid var(--border); background:rgba(255,255,255,0.08); color:var(--white); }
+    .relatorio-topbar button.principal { background:var(--green); color:var(--navy); border:none; }
+    .relatorio-doc { max-width:900px; margin:24px auto 60px; background:#fff; color:#1a1a2e; font-family:'Inter',sans-serif; border-radius:16px; overflow:hidden; box-shadow:0 12px 48px rgba(0,0,0,0.25); }
+
+    .rel-capa { background:linear-gradient(160deg,#0D1B4B 0%,#050912 100%); color:#fff; padding:60px 56px 44px; }
+    .rel-capa img.logo { height:38px; background:#fff; border-radius:8px; padding:4px 10px; margin-bottom:20px; }
+    .rel-tag { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#8fb8ff; margin-bottom:4px; }
+    .rel-subtag { font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-bottom:44px; }
+    .rel-capa h1 { font-size:34px; font-weight:800; line-height:1.18; color:#a9c6ff; margin-bottom:14px; }
+    .rel-desc { font-size:13.5px; color:rgba(255,255,255,0.75); margin-bottom:22px; }
+    .rel-divider { height:1px; background:rgba(255,255,255,0.25); margin-bottom:22px; }
+    .rel-meta-row { display:flex; gap:40px; margin-bottom:40px; flex-wrap:wrap; }
+    .rel-meta-row .item span { display:block; font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.5); margin-bottom:4px; }
+    .rel-meta-row .item strong { font-size:14px; font-weight:600; }
+    .rel-stat-strip { display:flex; background:rgba(255,255,255,0.06); border-radius:14px; overflow:hidden; flex-wrap:wrap; }
+    .rel-stat-strip .stat { flex:1; min-width:120px; padding:18px 22px; border-right:1px solid rgba(255,255,255,0.12); }
+    .rel-stat-strip .stat:last-child { border-right:none; }
+    .rel-stat-strip .stat b { display:block; font-size:24px; font-weight:800; margin-bottom:4px; }
+    .rel-stat-strip .stat span { font-size:11px; color:rgba(255,255,255,0.55); }
+
+    .rel-corpo { padding:36px 56px 50px; }
+    .rel-secao-titulo { display:flex; align-items:center; gap:9px; font-size:18px; font-weight:800; color:#141428; margin:32px 0 14px; }
+    .rel-secao-titulo:first-child { margin-top:0; }
+    .rel-callout { display:flex; gap:12px; border-radius:12px; padding:15px 18px; margin-bottom:18px; }
+    .rel-callout.atencao { background:#fdecec; border:1px solid #f6c6c6; }
+    .rel-callout.ok { background:#e8f7ea; border:1px solid #b9e6c0; }
+    .rel-callout b { display:block; margin-bottom:3px; font-size:13px; }
+    .rel-callout.atencao b { color:#c0392b; }
+    .rel-callout.ok b { color:#1f8a3b; }
+    .rel-callout p { font-size:12.5px; color:#444; line-height:1.55; }
+
+    .rel-kpi-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:8px; }
+    .rel-kpi { background:#f6f7fb; border-radius:12px; padding:16px 18px; }
+    .rel-kpi b { display:block; font-size:24px; font-weight:800; margin-bottom:3px; }
+    .rel-kpi span { font-size:11.5px; color:#666; }
+
+    .rel-tabela { width:100%; border-collapse:collapse; margin-bottom:20px; font-size:12.5px; }
+    .rel-tabela th { background:#0D1B4B; color:#fff; text-align:left; padding:9px 12px; font-size:10.5px; letter-spacing:0.5px; text-transform:uppercase; }
+    .rel-tabela td { padding:9px 12px; border-bottom:1px solid #eee; }
+    .rel-tabela tr:nth-child(even) td { background:#fafafa; }
+    .rel-barra-fundo { background:#eee; border-radius:4px; height:8px; overflow:hidden; width:90px; }
+    .rel-barra-preenchida { height:100%; border-radius:4px; }
+
+    .rel-pergunta { border:1px solid #eee; border-radius:10px; padding:14px 16px; margin-bottom:10px; }
+    .rel-pergunta .enun { font-weight:700; margin-bottom:9px; font-size:12.5px; }
+    .rel-alt { padding:7px 11px; border-radius:8px; font-size:12px; margin-bottom:5px; border:1px solid #eee; }
+    .rel-alt.correta { background:#e8f7ea; border-color:#b9e6c0; color:#1f8a3b; font-weight:600; }
+    .rel-alt.errada-escolhida { background:#fdecec; border-color:#f6c6c6; color:#c0392b; font-weight:600; }
+    .rel-pergunta-aberta { border-left:3px solid #1a5cb5; }
+    .rel-resposta-texto { background:#eef4fc; border:1px solid #cfe0f5; border-radius:8px; padding:10px 12px; font-size:12px; color:#1a1a2e; white-space:pre-wrap; }
+
+    @media print {
+      body > *:not(.relatorio-overlay) { display:none !important; }
+      .relatorio-topbar { display:none !important; }
+      .relatorio-overlay { position:static; background:#fff; overflow:visible; }
+      .relatorio-doc { max-width:none; margin:0; border-radius:0; box-shadow:none; }
+      * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+    }
 
     @media(max-width:700px) {
       #secao-painel { padding:20px 16px; }
@@ -319,9 +395,40 @@
         <div class="empty-state"><div class="es-icon">📊</div>Nenhum resultado ainda.</div>
       </div>
     </div>
+
+    <!-- Relatórios -->
+    <div class="panel-card">
+      <div class="panel-card-header">
+        <h3>📄 Relatórios</h3>
+      </div>
+      <div class="add-row">
+        <select id="relatorio-colaborador">
+          <option value="">— Selecione um colaborador —</option>
+        </select>
+        <div class="add-row-fields">
+          <select id="relatorio-mes" style="flex:1;">
+            <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+            <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+            <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+            <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+          </select>
+          <select id="relatorio-ano" style="flex:1;"></select>
+        </div>
+        <button class="btn-add" style="width:100%" id="btn-gerar-relatorio">📄 Gerar Relatório</button>
+      </div>
+    </div>
   </div>
 
   <footer>&copy; <strong>ACE Soluções Contábeis</strong> — Painel Administrativo Interno</footer>
+</div>
+
+<!-- RELATÓRIO (documento gerado, fora do #app pra não herdar o tema escuro) -->
+<div class="relatorio-overlay" id="secao-relatorio">
+  <div class="relatorio-topbar">
+    <button onclick="window.fecharRelatorio()">← Voltar ao Painel</button>
+    <button class="principal" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+  </div>
+  <div class="relatorio-doc" id="relatorio-doc"></div>
 </div>
 
 <script type="module" defer>
@@ -595,8 +702,21 @@
   let provaEmEdicao = null; // null = não estamos criando/editando nenhuma agora
 
   function novaPerguntaVazia() {
-    return { enunciado: '', alternativas: ['', ''], correta: 0 };
+    return { tipo: 'multipla', enunciado: '', alternativas: ['', ''], correta: 0 };
   }
+
+  // Alterna entre múltipla escolha e pergunta aberta (dissertativa) —
+  // preserva as alternativas já digitadas caso volte pra múltipla escolha.
+  window.mudarTipoPergunta = function(i, tipo) {
+    coletarBuilderDoDOM();
+    const p = provaEmEdicao.perguntas[i];
+    p.tipo = tipo;
+    if (tipo === 'multipla' && !p.alternativas) {
+      p.alternativas = ['', ''];
+      p.correta = 0;
+    }
+    renderBuilderProva();
+  };
 
   window.iniciarNovaProva = function() {
     provaEmEdicao = { id: null, titulo: '', perguntas: [novaPerguntaVazia()] };
@@ -626,6 +746,7 @@
     document.querySelectorAll('.pergunta-builder').forEach((pEl, i) => {
       const enEl = pEl.querySelector('.input-enunciado');
       if (enEl) provaEmEdicao.perguntas[i].enunciado = enEl.value;
+      if (provaEmEdicao.perguntas[i].tipo === 'aberta') return; // sem alternativas pra coletar
       pEl.querySelectorAll('.input-alternativa').forEach((aEl, j) => {
         provaEmEdicao.perguntas[i].alternativas[j] = aEl.value;
       });
@@ -675,14 +796,22 @@
             <span>Pergunta ${i + 1}</span>
             ${provaEmEdicao.perguntas.length > 1 ? `<button type="button" class="btn-remove-mini" onclick="window.removerPergunta(${i})">✕ remover pergunta</button>` : ''}
           </div>
+          <div class="tipo-pergunta-row">
+            <label><input type="radio" name="tipo-${i}" ${p.tipo !== 'aberta' ? 'checked' : ''} onchange="window.mudarTipoPergunta(${i},'multipla')"> Múltipla escolha</label>
+            <label><input type="radio" name="tipo-${i}" ${p.tipo === 'aberta' ? 'checked' : ''} onchange="window.mudarTipoPergunta(${i},'aberta')"> Pergunta aberta</label>
+          </div>
           <input type="text" class="input-enunciado" placeholder="Enunciado da pergunta" value="${escapeAttr(p.enunciado)}">
-          ${p.alternativas.map((a, j) => `
-            <div class="alternativa-row">
-              <input type="radio" name="correta-${i}" value="${j}" ${p.correta === j ? 'checked' : ''} title="Marcar como resposta correta">
-              <input type="text" class="input-alternativa" placeholder="Alternativa ${j + 1}" value="${escapeAttr(a)}">
-              ${p.alternativas.length > 2 ? `<button type="button" class="btn-remove-mini" onclick="window.removerAlternativa(${i},${j})">✕</button>` : ''}
-            </div>`).join('')}
-          <button type="button" class="btn-add-mini" onclick="window.adicionarAlternativa(${i})">+ alternativa</button>
+          ${p.tipo === 'aberta' ? `
+            <p class="aberta-aviso">O colaborador responde em texto livre — não entra na correção automática.</p>
+          ` : `
+            ${p.alternativas.map((a, j) => `
+              <div class="alternativa-row">
+                <input type="radio" name="correta-${i}" value="${j}" ${p.correta === j ? 'checked' : ''} title="Marcar como resposta correta">
+                <input type="text" class="input-alternativa" placeholder="Alternativa ${j + 1}" value="${escapeAttr(a)}">
+                ${p.alternativas.length > 2 ? `<button type="button" class="btn-remove-mini" onclick="window.removerAlternativa(${i},${j})">✕</button>` : ''}
+              </div>`).join('')}
+            <button type="button" class="btn-add-mini" onclick="window.adicionarAlternativa(${i})">+ alternativa</button>
+          `}
         </div>`).join('')}
       <div class="add-row-fields">
         <button type="button" class="btn-add-mini" style="width:100%" onclick="window.adicionarPergunta()">+ Adicionar Pergunta</button>
@@ -699,17 +828,23 @@
     if (titulo.length < 2) { alert('Dê um título pra prova.'); return; }
     for (const p of provaEmEdicao.perguntas) {
       if (!p.enunciado.trim()) { alert('Preencha o enunciado de todas as perguntas.'); return; }
-      if (p.alternativas.some(a => !a.trim())) { alert('Preencha todas as alternativas (ou remova as vazias).'); return; }
+      if (p.tipo !== 'aberta' && p.alternativas.some(a => !a.trim())) {
+        alert('Preencha todas as alternativas (ou remova as vazias).'); return;
+      }
     }
     loading(true, 'Salvando prova...');
     try {
       const dados = {
         titulo,
-        perguntas: provaEmEdicao.perguntas.map(p => ({
-          enunciado: p.enunciado.trim(),
-          alternativas: p.alternativas.map(a => a.trim()),
-          correta: p.correta
-        }))
+        perguntas: provaEmEdicao.perguntas.map(p => {
+          if (p.tipo === 'aberta') return { tipo: 'aberta', enunciado: p.enunciado.trim() };
+          return {
+            tipo: 'multipla',
+            enunciado: p.enunciado.trim(),
+            alternativas: p.alternativas.map(a => a.trim()),
+            correta: p.correta
+          };
+        })
       };
       if (provaEmEdicao.id) await setDoc(doc(db, 'provas', provaEmEdicao.id), dados);
       else                  await addDoc(collection(db, 'provas'), dados);
@@ -767,35 +902,246 @@
   }
 
   // RESULTADOS
+  let resultadosCache = [];
+
+  function montarDetalheResultado(r) {
+    if (!r.perguntas || !r.perguntas.length) {
+      return '<p style="padding:4px 0;color:var(--dim);font-size:12px;">Detalhe não disponível (resultado enviado antes desta função existir).</p>';
+    }
+    return r.perguntas.map((p, i) => {
+      if (p.tipo === 'aberta') {
+        return `
+          <div class="resultado-pergunta resultado-aberta">
+            <div class="rp-enun">${i + 1}. ${p.enunciado} <span style="font-weight:400;color:var(--dim);">(pergunta aberta)</span></div>
+            <div class="resposta-texto">${escapeAttr(p.resposta || '(sem resposta)').replace(/\n/g, '<br>')}</div>
+          </div>`;
+      }
+      return `
+        <div class="resultado-pergunta">
+          <div class="rp-enun">${i + 1}. ${p.enunciado}</div>
+          ${p.alternativas.map((a, j) => {
+            let cls = '';
+            if (j === p.correta) cls = 'certa';
+            else if (j === p.escolhida) cls = 'errada';
+            const marca = j === p.escolhida && j !== p.correta ? ' ← marcou' : (j === p.correta ? ' ✓ correta' : '');
+            return `<div class="resultado-alt ${cls}">${a}${marca}</div>`;
+          }).join('')}
+        </div>`;
+    }).join('');
+  }
+
   function renderResultados(lista) {
+    resultadosCache = lista;
     document.getElementById('lbl-resultados').textContent = lista.length;
     const el = document.getElementById('lista-resultados');
     if (!lista.length) {
       el.innerHTML = '<div class="empty-state"><div class="es-icon">📊</div>Nenhum resultado ainda.</div>';
-      return;
-    }
-    const ordenado = [...lista].sort((a, b) => (b.enviadoEm || '').localeCompare(a.enviadoEm || ''));
-    el.innerHTML = ordenado.map(r => {
-      const data = r.enviadoEm ? new Date(r.enviadoEm).toLocaleString('pt-BR') : 'Data desconhecida';
-      const pct  = r.total ? Math.round((r.acertos / r.total) * 100) : 0;
-      return `
-        <div class="list-item">
-          <div class="item-info">
-            <div class="item-avatar">${iniciais(r.nome || '?')}</div>
-            <div>
-              <div class="item-name">${r.nome}</div>
-              <div class="item-sub">${r.tituloProva || 'Prova'} — ${data}</div>
+    } else {
+      const ordenado = [...lista].sort((a, b) => (b.enviadoEm || '').localeCompare(a.enviadoEm || ''));
+      el.innerHTML = ordenado.map(r => {
+        const data = r.enviadoEm ? new Date(r.enviadoEm).toLocaleString('pt-BR') : 'Data desconhecida';
+        const pct  = r.total ? Math.round((r.acertos / r.total) * 100) : 0;
+        return `
+          <div class="list-item">
+            <div class="item-info">
+              <div class="item-avatar">${iniciais(r.nome || '?')}</div>
+              <div>
+                <div class="item-name">${r.nome}</div>
+                <div class="item-sub">${r.tituloProva || 'Prova'} — ${data}</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="font-weight:700;font-size:14px;color:${pct >= 70 ? 'var(--green)' : 'var(--red)'}">${r.acertos}/${r.total} (${pct}%)</div>
+              <button class="btn-edit" onclick="window.alternarDetalheResultado('${r.id}')">▾ Detalhes</button>
             </div>
           </div>
-          <div style="font-weight:700;font-size:14px;color:${pct >= 70 ? 'var(--green)' : 'var(--red)'}">${r.acertos}/${r.total} (${pct}%)</div>
-        </div>`;
-    }).join('');
+          <div class="resultado-detalhe" id="detalhe-${r.id}" style="display:none;">
+            ${montarDetalheResultado(r)}
+          </div>`;
+      }).join('');
+    }
+
+    // Popula o seletor de colaborador do gerador de relatórios
+    const nomesUnicos = [...new Set(lista.map(r => r.nome))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    const selRel = document.getElementById('relatorio-colaborador');
+    if (selRel) {
+      const atual = selRel.value;
+      selRel.innerHTML = '<option value="">— Selecione um colaborador —</option>' +
+        nomesUnicos.map(n => `<option value="${escapeAttr(n)}">${escapeAttr(n)}</option>`).join('');
+      if (nomesUnicos.includes(atual)) selRel.value = atual;
+    }
   }
+
+  window.alternarDetalheResultado = function(id) {
+    const el = document.getElementById('detalhe-' + id);
+    el.style.display = el.style.display === 'block' ? 'none' : 'block';
+  };
+
+  // RELATÓRIOS
+  const NOMES_MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  function corPorPct(pct) {
+    return pct >= 70 ? '#1f8a3b' : (pct >= 40 ? '#c07a12' : '#c0392b');
+  }
+
+  function montarHtmlRelatorio(nome, mes, ano, resultados) {
+    const total = resultados.length;
+    // Só entram na média/melhor/pior as provas com pelo menos uma pergunta
+    // de múltipla escolha (total > 0) — uma prova só com perguntas abertas
+    // não tem nota, e contar como 0% distorceria os números.
+    const comNota = resultados.filter(r => r.total > 0);
+    const percentuaisComNota = comNota.map(r => (r.acertos / r.total) * 100);
+    const mediaAcertos = percentuaisComNota.length ? percentuaisComNota.reduce((s, p) => s + p, 0) / percentuaisComNota.length : null;
+    const melhor = percentuaisComNota.length ? Math.max(...percentuaisComNota) : null;
+    const pior   = percentuaisComNota.length ? Math.min(...percentuaisComNota) : null;
+    const aprovados = percentuaisComNota.filter(p => p >= 70).length;
+    const dataEmissao = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const fmtPct = v => v === null ? '—' : v.toFixed(0) + '%';
+
+    const linhasTabela = resultados.map(r => {
+      const temNota = r.total > 0;
+      const pct  = temNota ? Math.round((r.acertos / r.total) * 100) : null;
+      const data = r.enviadoEm ? new Date(r.enviadoEm).toLocaleDateString('pt-BR') : '—';
+      return `
+        <tr>
+          <td>${escapeAttr(r.tituloProva || 'Prova')}</td>
+          <td>${data}</td>
+          <td>${temNota ? `${r.acertos}/${r.total}` : '—'}</td>
+          <td style="${temNota ? `color:${corPorPct(pct)};font-weight:700;` : 'color:#999;'}">${temNota ? pct + '%' : '—'}</td>
+          <td><div class="rel-barra-fundo">${temNota ? `<div class="rel-barra-preenchida" style="width:${pct}%;background:${corPorPct(pct)};"></div>` : ''}</div></td>
+        </tr>`;
+    }).join('');
+
+    const detalhePerguntas = resultados.map(r => `
+      <div class="rel-secao-titulo" style="font-size:14.5px;margin-top:22px;">📝 ${escapeAttr(r.tituloProva || 'Prova')} — ${r.enviadoEm ? new Date(r.enviadoEm).toLocaleDateString('pt-BR') : ''}</div>
+      ${(r.perguntas || []).map((p, i) => {
+        if (p.tipo === 'aberta') {
+          return `
+            <div class="rel-pergunta rel-pergunta-aberta">
+              <div class="enun">${i + 1}. ${escapeAttr(p.enunciado)} <span style="font-weight:400;color:#888;font-size:11px;">(resposta dissertativa)</span></div>
+              <div class="rel-resposta-texto">${escapeAttr(p.resposta || '(sem resposta)').replace(/\n/g, '<br>')}</div>
+            </div>`;
+        }
+        return `
+          <div class="rel-pergunta">
+            <div class="enun">${i + 1}. ${escapeAttr(p.enunciado)}</div>
+            ${p.alternativas.map((a, j) => {
+              let cls = '';
+              if (j === p.correta) cls = 'correta';
+              else if (j === p.escolhida) cls = 'errada-escolhida';
+              const marca = j === p.escolhida && j !== p.correta ? ' (marcado pelo colaborador)' : (j === p.correta ? ' (resposta correta)' : '');
+              return `<div class="rel-alt ${cls}">${escapeAttr(a)}${marca}</div>`;
+            }).join('')}
+          </div>`;
+      }).join('') || '<p style="font-size:12.5px;color:#888;">Detalhe não disponível para esta prova.</p>'}
+    `).join('');
+
+    const resumoTexto = `${escapeAttr(nome)} realizou <b>${total}</b> avaliaç${total === 1 ? 'ão' : 'ões'} em ${NOMES_MESES[mes - 1]} de ${ano}` +
+      (mediaAcertos !== null ? `, com aproveitamento médio de <b>${mediaAcertos.toFixed(1)}%</b>. ` : '. ') +
+      (percentuaisComNota.length === 0 ? 'Nenhuma das provas do período teve correção automática (só perguntas abertas).' :
+       aprovados === percentuaisComNota.length ? 'Todas as avaliações corrigidas automaticamente atingiram a faixa de aprovação (≥70%).' :
+       aprovados === 0 ? 'Nenhuma avaliação atingiu a faixa de aprovação (≥70%) no período.' :
+       `${aprovados} de ${percentuaisComNota.length} avaliaç${percentuaisComNota.length === 1 ? 'ão' : 'ões'} corrigida${percentuaisComNota.length === 1 ? '' : 's'} automaticamente atingiram a faixa de aprovação (≥70%).`);
+
+    return `
+      <div class="rel-capa">
+        <img class="logo" src="https://raw.githubusercontent.com/deptopessoal-a11y/Admin/main/logo_png.png" onerror="this.style.display='none'">
+        <div class="rel-tag">RELATÓRIO MENSAL · ${NOMES_MESES[mes - 1].toUpperCase()} ${ano}</div>
+        <div class="rel-subtag">AVALIAÇÕES DE CONHECIMENTO</div>
+        <h1>Relatório de<br>Desempenho</h1>
+        <div class="rel-desc">Resultados individuais de avaliação — ${escapeAttr(nome)}</div>
+        <div class="rel-divider"></div>
+        <div class="rel-meta-row">
+          <div class="item"><span>Data de Emissão</span><strong>${dataEmissao}</strong></div>
+          <div class="item"><span>Colaborador</span><strong>${escapeAttr(nome)}</strong></div>
+          <div class="item"><span>Período</span><strong>${NOMES_MESES[mes - 1]} de ${ano}</strong></div>
+        </div>
+        <div class="rel-stat-strip">
+          <div class="stat"><b>${total}</b><span>Provas realizadas</span></div>
+          <div class="stat"><b>${fmtPct(mediaAcertos)}</b><span>Média de acertos</span></div>
+          <div class="stat"><b>${fmtPct(melhor)}</b><span>Melhor nota</span></div>
+          <div class="stat"><b>${fmtPct(pior)}</b><span>Menor nota</span></div>
+        </div>
+      </div>
+      <div class="rel-corpo">
+        <div class="rel-secao-titulo">📋 Resumo</div>
+        <p style="font-size:13.5px;color:#333;line-height:1.7;margin-bottom:18px;">${resumoTexto}</p>
+
+        ${percentuaisComNota.length && aprovados < percentuaisComNota.length ? `
+        <div class="rel-callout atencao">
+          <span style="font-size:20px;">⚠️</span>
+          <div><b>Ponto de atenção</b><p>${percentuaisComNota.length - aprovados} de ${percentuaisComNota.length} avaliaç${(percentuaisComNota.length - aprovados) === 1 ? 'ão ficou' : 'ões ficaram'} abaixo de 70% de aproveitamento no período.</p></div>
+        </div>` : percentuaisComNota.length ? `
+        <div class="rel-callout ok">
+          <span style="font-size:20px;">✅</span>
+          <div><b>Bom desempenho</b><p>Todas as avaliações corrigidas automaticamente atingiram a faixa de aprovação.</p></div>
+        </div>` : ''}
+
+        <div class="rel-secao-titulo">📊 Indicadores</div>
+        <div class="rel-kpi-grid">
+          <div class="rel-kpi"><b style="color:#1a5cb5;">${total}</b><span>Provas realizadas</span></div>
+          <div class="rel-kpi"><b style="color:${mediaAcertos === null ? '#999' : corPorPct(mediaAcertos)};">${fmtPct(mediaAcertos)}</b><span>Média de acertos</span></div>
+          <div class="rel-kpi"><b style="color:#1f8a3b;">${percentuaisComNota.length ? `${aprovados}/${percentuaisComNota.length}` : '—'}</b><span>Aprovações (≥70%)</span></div>
+        </div>
+
+        <div class="rel-secao-titulo">🗂️ Provas no Período</div>
+        <table class="rel-tabela">
+          <thead><tr><th>Prova</th><th>Data</th><th>Acertos</th><th>%</th><th>Progresso</th></tr></thead>
+          <tbody>${linhasTabela}</tbody>
+        </table>
+
+        <div class="rel-secao-titulo">🔍 Detalhe por Prova</div>
+        ${detalhePerguntas}
+      </div>`;
+  }
+
+  window.gerarRelatorio = function() {
+    const nome = document.getElementById('relatorio-colaborador').value;
+    const mes  = parseInt(document.getElementById('relatorio-mes').value, 10);
+    const ano  = parseInt(document.getElementById('relatorio-ano').value, 10);
+    if (!nome) { alert('Selecione um colaborador.'); return; }
+
+    const inicio = new Date(ano, mes - 1, 1);
+    const fim    = new Date(ano, mes, 1);
+    const doPeriodo = resultadosCache
+      .filter(r => r.nome === nome)
+      .filter(r => { const d = new Date(r.enviadoEm); return d >= inicio && d < fim; })
+      .sort((a, b) => (a.enviadoEm || '').localeCompare(b.enviadoEm || ''));
+
+    if (!doPeriodo.length) {
+      alert(`Nenhum resultado de ${nome} em ${NOMES_MESES[mes - 1]}/${ano}.`);
+      return;
+    }
+
+    document.getElementById('relatorio-doc').innerHTML = montarHtmlRelatorio(nome, mes, ano, doPeriodo);
+    document.getElementById('secao-relatorio').style.display = 'block';
+    window.scrollTo(0, 0);
+  };
+
+  window.fecharRelatorio = function() {
+    document.getElementById('secao-relatorio').style.display = 'none';
+  };
+
+  // Popula o seletor de ano do relatório (ano atual + 1 ano pra trás/frente)
+  // e deixa o mês atual pré-selecionado, pra facilitar o uso mais comum.
+  (function initSeletoresRelatorio() {
+    const hoje    = new Date();
+    const anoAtual = hoje.getFullYear();
+    const selAno  = document.getElementById('relatorio-ano');
+    if (selAno) {
+      selAno.innerHTML = [anoAtual + 1, anoAtual, anoAtual - 1, anoAtual - 2]
+        .map(a => `<option value="${a}">${a}</option>`).join('');
+      selAno.value = String(anoAtual);
+    }
+    const selMes = document.getElementById('relatorio-mes');
+    if (selMes) selMes.value = String(hoje.getMonth() + 1);
+  })();
 
   // ── Listeners de botão (compatível com type="module") ──
   document.getElementById('btn-entrar')   ?.addEventListener('click', () => window.fazerLogin());
   document.getElementById('btn-logout')   ?.addEventListener('click', () => window.logout());
   document.getElementById('btn-adicionar')?.addEventListener('click', () => window.adicionarColaborador());
+  document.getElementById('btn-gerar-relatorio')?.addEventListener('click', () => window.gerarRelatorio());
 
   document.getElementById('input-email')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') window.fazerLogin();
