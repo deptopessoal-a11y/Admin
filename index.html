@@ -140,6 +140,12 @@
 
     .btn-remove { background:rgba(255,107,107,0.12); border:1px solid rgba(255,107,107,0.25); color:var(--red); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; padding:5px 12px; border-radius:6px; cursor:pointer; transition:background 0.2s; }
     .btn-remove:hover { background:rgba(255,107,107,0.25); }
+    .btn-edit { background:rgba(106,176,255,0.12); border:1px solid rgba(106,176,255,0.30); color:#6ab0ff; font-family:'Inter',sans-serif; font-size:11px; font-weight:600; padding:5px 12px; border-radius:6px; cursor:pointer; transition:background 0.2s; white-space:nowrap; }
+    .btn-edit:hover { background:rgba(106,176,255,0.25); }
+    .edit-link-row { display:flex; gap:8px; padding:0 24px 14px; }
+    .edit-link-row input { flex:1; background:rgba(255,255,255,0.07); border:1px solid var(--border); border-radius:8px; color:var(--white); font-family:'Inter',sans-serif; font-size:12px; padding:9px 12px; outline:none; transition:border-color 0.2s; }
+    .edit-link-row input:focus { border-color:var(--green); }
+    .edit-link-row input::placeholder { color:rgba(255,255,255,0.22); }
     .btn-unlock { background:rgba(90,230,32,0.12); border:1px solid rgba(90,230,32,0.25); color:var(--green); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; padding:5px 12px; border-radius:6px; cursor:pointer; transition:background 0.2s; }
     .btn-unlock:hover { background:rgba(90,230,32,0.25); }
 
@@ -238,6 +244,26 @@
       </div>
     </div>
 
+    <!-- Formulários salvos (histórico de links nomeados) -->
+    <div class="panel-card">
+      <div class="panel-card-header">
+        <h3>🔗 Formulários Salvos <span class="count" id="lbl-formularios">0</span></h3>
+      </div>
+      <div class="add-row">
+        <input type="text" id="input-form-titulo" placeholder="Nome do formulário (ex.: Avaliação Excel — Set/2026)">
+        <input type="text" id="input-form-link" placeholder="Link do JotForm (https://form.jotform.com/...)">
+        <div class="add-row-fields">
+          <button class="btn-add" style="width:100%" id="btn-salvar-formulario">+ Salvar Formulário</button>
+        </div>
+      </div>
+      <div class="list-area" id="lista-formularios">
+        <div class="empty-state"><div class="es-icon">🔗</div>Nenhum formulário salvo ainda.</div>
+      </div>
+    </div>
+
+    <!-- Sugestão de links salvos pros campos de link abaixo -->
+    <datalist id="opcoes-formularios"></datalist>
+
     <!-- Grid -->
     <div class="painel-grid">
 
@@ -248,7 +274,7 @@
         </div>
         <div class="add-row">
           <input type="text" id="input-novo" placeholder="Nome completo do colaborador">
-          <input type="text" id="input-link" placeholder="Link do JotForm (https://form.jotform.com/...)">
+          <input type="text" id="input-link" list="opcoes-formularios" placeholder="Link do JotForm (https://form.jotform.com/...)">
           <div class="add-row-fields">
             <button class="btn-add" style="width:100%" id="btn-adicionar">+ Adicionar Colaborador</button>
           </div>
@@ -276,7 +302,7 @@
 
 <script type="module" defer>
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, doc, getDocs, setDoc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -369,6 +395,19 @@
       renderAutorizados(autorizados, bloqueados.map(b => b.id));
       renderBloqueados(bloqueados);
 
+      // Busca à parte: se as regras do Firestore ainda não tiverem sido
+      // atualizadas com a coleção 'formularios', isso não deve derrubar
+      // o resto do painel.
+      try {
+        const snapForms = await getDocs(collection(db, 'formularios'));
+        const formularios = [];
+        snapForms.forEach(d => formularios.push({ id: d.id, ...d.data() }));
+        renderFormularios(formularios);
+      } catch(e) {
+        console.error('[ACE Admin] Erro ao carregar formulários salvos:', e);
+        renderFormularios([]);
+      }
+
       const total = autorizados.length;
       const bloqN = bloqueados.length;
       const disp  = total - bloqN;
@@ -383,6 +422,12 @@
     loading(false);
   }
 
+  function escapeAttr(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   function renderAutorizados(lista, bloqueadosIds) {
     const el = document.getElementById('lista-autorizados');
     if (!lista.length) {
@@ -390,17 +435,29 @@
       return;
     }
     el.innerHTML = lista.map(c => {
-      const bloq = bloqueadosIds.includes(c.id);
+      const bloq     = bloqueadosIds.includes(c.id);
+      const nomeJs   = c.nome.replace(/'/g, "\\'");
+      let statusTxt;
+      if (bloq)          statusTxt = '🔒 Bloqueado';
+      else if (!c.link)  statusTxt = '⚠️ Sem link cadastrado';
+      else               statusTxt = '✅ Disponível';
       return `
         <div class="list-item">
           <div class="item-info">
             <div class="item-avatar ${bloq ? 'blocked' : ''}">${iniciais(c.nome)}</div>
             <div>
               <div class="item-name">${c.nome}</div>
-              <div class="item-sub">${bloq ? '🔒 Bloqueado' : '✅ Disponível'}</div>
+              <div class="item-sub">${statusTxt}</div>
             </div>
           </div>
-          <button class="btn-remove" onclick="window.removerColaborador('${c.id}', '${c.nome.replace(/'/g,"\\'")}')">Remover</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-edit" onclick="window.alternarEdicaoLink('${c.id}')">✎ Link</button>
+            <button class="btn-remove" onclick="window.removerColaborador('${c.id}', '${nomeJs}')">Remover</button>
+          </div>
+        </div>
+        <div class="edit-link-row" id="edit-${c.id}" style="display:none;">
+          <input type="text" id="link-${c.id}" list="opcoes-formularios" value="${escapeAttr(c.link)}" placeholder="Link do JotForm (https://form.jotform.com/...)">
+          <button class="btn-add" onclick="window.salvarLink('${c.id}', '${nomeJs}')">Salvar</button>
         </div>`;
     }).join('');
   }
@@ -449,17 +506,21 @@
     }
   };
 
-  // SALVAR LINK
+  // EDITAR LINK (sem apagar/recriar o colaborador)
+  window.alternarEdicaoLink = function(id) {
+    const row = document.getElementById('edit-' + id);
+    const abrindo = row.style.display !== 'flex';
+    row.style.display = abrindo ? 'flex' : 'none';
+    if (abrindo) document.getElementById('link-' + id).focus();
+  };
+
   window.salvarLink = async function(id, nome) {
     const input = document.getElementById('link-' + id);
     const link  = input.value.trim();
-    if (!link.startsWith('http')) { alert('Cole um link válido do JotForm.'); return; }
+    if (!link.startsWith('http')) { input.focus(); alert('Cole um link válido do JotForm.'); return; }
     loading(true, 'Salvando link...');
     try {
-      const snap = await getDocs(collection(db, 'autorizados'));
-      let nomeAtual = nome;
-      snap.forEach(d => { if (d.id === id) nomeAtual = d.data().nome; });
-      await setDoc(doc(db, 'autorizados', id), { nome: nomeAtual, link });
+      await setDoc(doc(db, 'autorizados', id), { nome, link });
       await carregarDados();
     } catch(e) {
       alert('Erro ao salvar link.');
@@ -493,10 +554,70 @@
     }
   };
 
+  // FORMULÁRIOS SALVOS (histórico de links nomeados, reaproveitáveis)
+  function renderFormularios(lista) {
+    const el       = document.getElementById('lista-formularios');
+    const datalist = document.getElementById('opcoes-formularios');
+    document.getElementById('lbl-formularios').textContent = lista.length;
+
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty-state"><div class="es-icon">🔗</div>Nenhum formulário salvo ainda.</div>';
+      datalist.innerHTML = '';
+      return;
+    }
+    el.innerHTML = lista.map(f => `
+      <div class="list-item">
+        <div class="item-info">
+          <div>
+            <div class="item-name">${f.titulo}</div>
+            <div class="item-sub">${f.link}</div>
+          </div>
+        </div>
+        <button class="btn-remove" onclick="window.removerFormulario('${f.id}', '${f.titulo.replace(/'/g,"\\'")}')">Remover</button>
+      </div>`).join('');
+    datalist.innerHTML = lista.map(f =>
+      `<option value="${escapeAttr(f.link)}">${escapeAttr(f.titulo)}</option>`
+    ).join('');
+  }
+
+  window.salvarFormulario = async function() {
+    const inputTitulo = document.getElementById('input-form-titulo');
+    const inputLink   = document.getElementById('input-form-link');
+    const titulo = inputTitulo.value.trim();
+    const link   = inputLink.value.trim();
+
+    if (titulo.length < 2) { inputTitulo.focus(); alert('Dê um nome pro formulário.'); return; }
+    if (!link.startsWith('http')) { inputLink.focus(); alert('Cole o link do JotForm corretamente.'); return; }
+
+    loading(true, 'Salvando formulário...');
+    try {
+      await addDoc(collection(db, 'formularios'), { titulo, link });
+      inputTitulo.value = '';
+      inputLink.value   = '';
+      await carregarDados();
+    } catch(e) {
+      alert('Erro ao salvar formulário.');
+      loading(false);
+    }
+  };
+
+  window.removerFormulario = async function(id, titulo) {
+    if (!confirm(`Remover "${titulo}" da lista de formulários salvos? (isso não afeta colaboradores que já usam esse link)`)) return;
+    loading(true, 'Removendo...');
+    try {
+      await deleteDoc(doc(db, 'formularios', id));
+      await carregarDados();
+    } catch(e) {
+      alert('Erro ao remover. Tente novamente.');
+      loading(false);
+    }
+  };
+
   // ── Listeners de botão (compatível com type="module") ──
   document.getElementById('btn-entrar')   ?.addEventListener('click', () => window.fazerLogin());
   document.getElementById('btn-logout')   ?.addEventListener('click', () => window.logout());
   document.getElementById('btn-adicionar')?.addEventListener('click', () => window.adicionarColaborador());
+  document.getElementById('btn-salvar-formulario')?.addEventListener('click', () => window.salvarFormulario());
 
   document.getElementById('input-email')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') window.fazerLogin();
@@ -506,6 +627,12 @@
   });
   document.getElementById('input-novo')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') window.adicionarColaborador();
+  });
+  document.getElementById('input-form-titulo')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.salvarFormulario();
+  });
+  document.getElementById('input-form-link')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.salvarFormulario();
   });
 </script>
 </body>
