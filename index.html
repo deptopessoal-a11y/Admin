@@ -244,6 +244,26 @@
       </div>
     </div>
 
+    <!-- Formulários salvos (histórico de links nomeados) -->
+    <div class="panel-card">
+      <div class="panel-card-header">
+        <h3>🔗 Formulários Salvos <span class="count" id="lbl-formularios">0</span></h3>
+      </div>
+      <div class="add-row">
+        <input type="text" id="input-form-titulo" placeholder="Nome do formulário (ex.: Avaliação Excel — Set/2026)">
+        <input type="text" id="input-form-link" placeholder="Link do JotForm (https://form.jotform.com/...)">
+        <div class="add-row-fields">
+          <button class="btn-add" style="width:100%" id="btn-salvar-formulario">+ Salvar Formulário</button>
+        </div>
+      </div>
+      <div class="list-area" id="lista-formularios">
+        <div class="empty-state"><div class="es-icon">🔗</div>Nenhum formulário salvo ainda.</div>
+      </div>
+    </div>
+
+    <!-- Sugestão de links salvos pros campos de link abaixo -->
+    <datalist id="opcoes-formularios"></datalist>
+
     <!-- Grid -->
     <div class="painel-grid">
 
@@ -254,7 +274,7 @@
         </div>
         <div class="add-row">
           <input type="text" id="input-novo" placeholder="Nome completo do colaborador">
-          <input type="text" id="input-link" placeholder="Link do JotForm (https://form.jotform.com/...)">
+          <input type="text" id="input-link" list="opcoes-formularios" placeholder="Link do JotForm (https://form.jotform.com/...)">
           <div class="add-row-fields">
             <button class="btn-add" style="width:100%" id="btn-adicionar">+ Adicionar Colaborador</button>
           </div>
@@ -282,7 +302,7 @@
 
 <script type="module" defer>
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, collection, doc, getDocs, setDoc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -375,6 +395,19 @@
       renderAutorizados(autorizados, bloqueados.map(b => b.id));
       renderBloqueados(bloqueados);
 
+      // Busca à parte: se as regras do Firestore ainda não tiverem sido
+      // atualizadas com a coleção 'formularios', isso não deve derrubar
+      // o resto do painel.
+      try {
+        const snapForms = await getDocs(collection(db, 'formularios'));
+        const formularios = [];
+        snapForms.forEach(d => formularios.push({ id: d.id, ...d.data() }));
+        renderFormularios(formularios);
+      } catch(e) {
+        console.error('[ACE Admin] Erro ao carregar formulários salvos:', e);
+        renderFormularios([]);
+      }
+
       const total = autorizados.length;
       const bloqN = bloqueados.length;
       const disp  = total - bloqN;
@@ -423,7 +456,7 @@
           </div>
         </div>
         <div class="edit-link-row" id="edit-${c.id}" style="display:none;">
-          <input type="text" id="link-${c.id}" value="${escapeAttr(c.link)}" placeholder="Link do JotForm (https://form.jotform.com/...)">
+          <input type="text" id="link-${c.id}" list="opcoes-formularios" value="${escapeAttr(c.link)}" placeholder="Link do JotForm (https://form.jotform.com/...)">
           <button class="btn-add" onclick="window.salvarLink('${c.id}', '${nomeJs}')">Salvar</button>
         </div>`;
     }).join('');
@@ -521,10 +554,70 @@
     }
   };
 
+  // FORMULÁRIOS SALVOS (histórico de links nomeados, reaproveitáveis)
+  function renderFormularios(lista) {
+    const el       = document.getElementById('lista-formularios');
+    const datalist = document.getElementById('opcoes-formularios');
+    document.getElementById('lbl-formularios').textContent = lista.length;
+
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty-state"><div class="es-icon">🔗</div>Nenhum formulário salvo ainda.</div>';
+      datalist.innerHTML = '';
+      return;
+    }
+    el.innerHTML = lista.map(f => `
+      <div class="list-item">
+        <div class="item-info">
+          <div>
+            <div class="item-name">${f.titulo}</div>
+            <div class="item-sub">${f.link}</div>
+          </div>
+        </div>
+        <button class="btn-remove" onclick="window.removerFormulario('${f.id}', '${f.titulo.replace(/'/g,"\\'")}')">Remover</button>
+      </div>`).join('');
+    datalist.innerHTML = lista.map(f =>
+      `<option value="${escapeAttr(f.link)}">${escapeAttr(f.titulo)}</option>`
+    ).join('');
+  }
+
+  window.salvarFormulario = async function() {
+    const inputTitulo = document.getElementById('input-form-titulo');
+    const inputLink   = document.getElementById('input-form-link');
+    const titulo = inputTitulo.value.trim();
+    const link   = inputLink.value.trim();
+
+    if (titulo.length < 2) { inputTitulo.focus(); alert('Dê um nome pro formulário.'); return; }
+    if (!link.startsWith('http')) { inputLink.focus(); alert('Cole o link do JotForm corretamente.'); return; }
+
+    loading(true, 'Salvando formulário...');
+    try {
+      await addDoc(collection(db, 'formularios'), { titulo, link });
+      inputTitulo.value = '';
+      inputLink.value   = '';
+      await carregarDados();
+    } catch(e) {
+      alert('Erro ao salvar formulário.');
+      loading(false);
+    }
+  };
+
+  window.removerFormulario = async function(id, titulo) {
+    if (!confirm(`Remover "${titulo}" da lista de formulários salvos? (isso não afeta colaboradores que já usam esse link)`)) return;
+    loading(true, 'Removendo...');
+    try {
+      await deleteDoc(doc(db, 'formularios', id));
+      await carregarDados();
+    } catch(e) {
+      alert('Erro ao remover. Tente novamente.');
+      loading(false);
+    }
+  };
+
   // ── Listeners de botão (compatível com type="module") ──
   document.getElementById('btn-entrar')   ?.addEventListener('click', () => window.fazerLogin());
   document.getElementById('btn-logout')   ?.addEventListener('click', () => window.logout());
   document.getElementById('btn-adicionar')?.addEventListener('click', () => window.adicionarColaborador());
+  document.getElementById('btn-salvar-formulario')?.addEventListener('click', () => window.salvarFormulario());
 
   document.getElementById('input-email')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') window.fazerLogin();
@@ -534,6 +627,12 @@
   });
   document.getElementById('input-novo')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') window.adicionarColaborador();
+  });
+  document.getElementById('input-form-titulo')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.salvarFormulario();
+  });
+  document.getElementById('input-form-link')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.salvarFormulario();
   });
 </script>
 </body>
