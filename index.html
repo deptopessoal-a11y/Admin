@@ -1114,8 +1114,9 @@
     } else {
       const ordenado = [...lista].sort((a, b) => (b.enviadoEm || '').localeCompare(a.enviadoEm || ''));
       el.innerHTML = ordenado.map(r => {
-        const data = r.enviadoEm ? new Date(r.enviadoEm).toLocaleString('pt-BR') : 'Data desconhecida';
-        const pct  = r.total ? Math.round((r.acertos / r.total) * 100) : 0;
+        const data   = r.enviadoEm ? new Date(r.enviadoEm).toLocaleString('pt-BR') : 'Data desconhecida';
+        const pct    = r.total ? Math.round((r.acertos / r.total) * 100) : 0;
+        const nomeJs = (r.nome || '').replace(/'/g, "\\'");
         return `
           <div class="list-item">
             <div class="item-info">
@@ -1128,6 +1129,7 @@
             <div style="display:flex;align-items:center;gap:10px;">
               <div style="font-weight:700;font-size:14px;color:${pct >= 70 ? 'var(--green)' : 'var(--red)'}">${r.acertos}/${r.total} (${pct}%)</div>
               <button class="btn-edit" onclick="window.alternarDetalheResultado('${r.id}')">▾ Detalhes</button>
+              <button class="btn-remove" onclick="window.excluirResultado('${r.id}', '${nomeJs}')">Excluir</button>
             </div>
           </div>
           <div class="resultado-detalhe" id="detalhe-${r.id}" style="display:none;">
@@ -1150,6 +1152,31 @@
   window.alternarDetalheResultado = function(id) {
     const el = document.getElementById('detalhe-' + id);
     el.style.display = el.style.display === 'block' ? 'none' : 'block';
+  };
+
+  // Exclusão de resultado é irreversível (some da lista, do relatório
+  // mensal e das estatísticas) — por isso pede uma senha de confirmação
+  // além do "tem certeza?" já usado nas outras remoções. Não é uma
+  // segurança de verdade (é só uma trava contra clique acidental —
+  // quem já está logado no painel tem acesso de sobra pra excluir do
+  // jeito que quiser), só um passo a mais antes de uma ação sem volta.
+  window.excluirResultado = async function(id, nome) {
+    const senha = prompt(`Para excluir o resultado de "${nome}", digite a senha de confirmação:`);
+    if (senha === null) return; // cancelou o prompt
+    if (senha !== '1901') {
+      alert('Senha incorreta. O resultado não foi excluído.');
+      return;
+    }
+    if (!confirm(`Excluir definitivamente o resultado de "${nome}"? Essa ação não pode ser desfeita.`)) return;
+
+    loading(true, 'Excluindo...');
+    try {
+      await deleteDoc(doc(db, 'resultados', id));
+      await carregarDados();
+    } catch(e) {
+      alert('Erro ao excluir. Tente novamente.');
+      loading(false);
+    }
   };
 
   // RELATÓRIOS
