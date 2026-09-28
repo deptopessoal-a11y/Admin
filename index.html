@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Painel Admin – ACE Avaliações</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,700;125,700;125,800;125,900&family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -41,7 +42,7 @@
       border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100;
     }
     .logo-area { display:flex; align-items:center; gap:14px; }
-    .logo-area img { height:40px; background:#fff; border-radius:8px; padding:3px 9px; }
+    .logo-area img { height:30px; }
     .header-title { border-left:2px solid var(--green); padding-left:14px; }
     .header-title span { display:block; font-size:10px; font-weight:500; letter-spacing:2.5px; text-transform:uppercase; color:var(--dim); }
     .header-title strong { display:block; font-size:15px; font-weight:700; }
@@ -218,7 +219,7 @@
     .relatorio-doc { max-width:900px; margin:24px auto 60px; background:#fff; color:#1a1a2e; font-family:'Inter',sans-serif; border-radius:16px; overflow:hidden; box-shadow:0 12px 48px rgba(0,0,0,0.25); }
 
     .rel-capa { background:linear-gradient(160deg,#0D1B4B 0%,#050912 100%); color:#fff; padding:60px 56px 44px; }
-    .rel-capa img.logo { height:38px; background:#fff; border-radius:8px; padding:4px 10px; margin-bottom:20px; }
+    .rel-capa img.logo { height:30px; margin-bottom:20px; }
     .rel-tag { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#8fb8ff; margin-bottom:4px; }
     .rel-subtag { font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-bottom:44px; }
     .rel-capa h1 { font-size:34px; font-weight:800; line-height:1.18; color:#a9c6ff; margin-bottom:14px; }
@@ -343,8 +344,8 @@
 <div id="app">
   <header>
     <div class="logo-area">
-      <img src="https://raw.githubusercontent.com/deptopessoal-a11y/Admin/main/logo_png.png"
-           alt="ACE" onerror="this.style.display='none'">
+      <img src="ace2-logo-branco.png"
+           alt="ACE Soluções Contábeis" onerror="this.style.display='none'">
       <div class="header-title">
         <span>ACE Soluções Contábeis</span>
         <strong>Painel Administrativo</strong>
@@ -1247,7 +1248,7 @@
 
     return `
       <div class="rel-capa">
-        <img class="logo" src="https://raw.githubusercontent.com/deptopessoal-a11y/Admin/main/logo_png.png" onerror="this.style.display='none'">
+        <img class="logo" src="ace2-logo-branco.png" alt="ACE Soluções Contábeis" onerror="this.style.display='none'">
         <div class="rel-tag">RELATÓRIO MENSAL · ${NOMES_MESES[mes - 1].toUpperCase()} ${ano}</div>
         <div class="rel-subtag">AVALIAÇÕES DE CONHECIMENTO</div>
         <h1>Relatório de<br>Desempenho</h1>
