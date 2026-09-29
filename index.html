@@ -377,64 +377,93 @@
     .resultado-pergunta.resultado-aberta { border-left:3px solid var(--ink); }
     .resposta-texto { background:var(--bg2); border:1px solid var(--linha); border-radius:4px; padding:10px 12px; font-size:12px; color:var(--ink); white-space:pre-wrap; }
 
-    /* ── RELATÓRIO (documento com identidade visual própria, clara) ── */
+    /* ── RELATÓRIO (documento com identidade visual própria, A4/12mm) ── */
     .relatorio-overlay { display:none; position:fixed; inset:0; z-index:2000; background:#f3f4f8; overflow-y:auto; }
-    .relatorio-topbar { position:sticky; top:0; z-index:10; display:flex; justify-content:space-between; align-items:center; padding:14px 28px; background:var(--navy); box-shadow:0 2px 12px rgba(0,0,0,0.3); }
-    .relatorio-topbar button { font-family:'Inter',sans-serif; font-size:13px; font-weight:700; padding:10px 18px; border-radius:8px; cursor:pointer; border:1px solid var(--border); background:rgba(255,255,255,0.08); color:var(--white); }
-    .relatorio-topbar button.principal { background:var(--green); color:var(--navy); border:none; }
-    .relatorio-doc { max-width:900px; margin:24px auto 60px; background:#fff; color:#1a1a2e; font-family:'Inter',sans-serif; border-radius:16px; overflow:hidden; box-shadow:0 12px 48px rgba(0,0,0,0.25); }
+    .relatorio-topbar { position:sticky; top:0; z-index:10; display:flex; justify-content:space-between; align-items:center; padding:14px 28px; background:var(--ink); box-shadow:0 2px 12px rgba(0,0,0,0.3); }
+    .relatorio-topbar button { font-family:'Lexend',sans-serif; font-size:13px; font-weight:600; padding:10px 18px; border-radius:4px; cursor:pointer; border:1px solid rgba(255,255,255,0.25); background:rgba(255,255,255,0.08); color:#fff; }
+    .relatorio-topbar button.principal { background:#fff; color:var(--ink); border:none; }
+    .relatorio-doc { max-width:900px; margin:24px auto 60px; background:#fff; color:#1a1a2e; font-family:'Lexend',sans-serif; border-radius:6px; overflow:hidden; box-shadow:0 12px 48px rgba(0,0,0,0.25); }
 
-    .rel-capa { background:linear-gradient(160deg,#0D1B4B 0%,#050912 100%); color:#fff; padding:60px 56px 44px; }
-    .rel-capa img.logo { height:30px; margin-bottom:20px; }
-    .rel-tag { font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#8fb8ff; margin-bottom:4px; }
+    .rel-capa { background:linear-gradient(160deg,#1B1C39 0%,#0A0A18 100%); color:#fff; padding:60px 56px 44px; }
+    .rel-capa img.logo { height:26px; margin-bottom:20px; }
+    .rel-tag { font-family:'Archivo',sans-serif; font-stretch:125%; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#9AA3D6; margin-bottom:4px; }
     .rel-subtag { font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-bottom:44px; }
-    .rel-capa h1 { font-size:34px; font-weight:800; line-height:1.18; color:#a9c6ff; margin-bottom:14px; }
+    .rel-capa h1 { font-family:'Archivo',sans-serif; font-stretch:125%; font-size:32px; font-weight:800; line-height:1.18; color:#fff; margin-bottom:14px; text-transform:uppercase; }
     .rel-desc { font-size:13.5px; color:rgba(255,255,255,0.75); margin-bottom:22px; }
     .rel-divider { height:1px; background:rgba(255,255,255,0.25); margin-bottom:22px; }
     .rel-meta-row { display:flex; gap:40px; margin-bottom:40px; flex-wrap:wrap; }
     .rel-meta-row .item span { display:block; font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:rgba(255,255,255,0.5); margin-bottom:4px; }
     .rel-meta-row .item strong { font-size:14px; font-weight:600; }
-    .rel-stat-strip { display:flex; background:rgba(255,255,255,0.06); border-radius:14px; overflow:hidden; flex-wrap:wrap; }
+    .rel-stat-strip { display:flex; background:rgba(255,255,255,0.06); border-radius:6px; overflow:hidden; flex-wrap:wrap; }
     .rel-stat-strip .stat { flex:1; min-width:120px; padding:18px 22px; border-right:1px solid rgba(255,255,255,0.12); }
     .rel-stat-strip .stat:last-child { border-right:none; }
-    .rel-stat-strip .stat b { display:block; font-size:24px; font-weight:800; margin-bottom:4px; }
+    .rel-stat-strip .stat b { font-family:'Archivo',sans-serif; font-stretch:125%; display:block; font-size:24px; font-weight:800; margin-bottom:4px; }
     .rel-stat-strip .stat span { font-size:11px; color:rgba(255,255,255,0.55); }
 
     .rel-corpo { padding:36px 56px 50px; }
-    .rel-secao-titulo { display:flex; align-items:center; gap:9px; font-size:18px; font-weight:800; color:#141428; margin:32px 0 14px; }
+    .rel-secao-titulo { font-family:'Archivo',sans-serif; font-stretch:125%; text-transform:uppercase; display:flex; align-items:center; gap:9px; font-size:16px; font-weight:800; color:var(--ink); margin:32px 0 14px; }
     .rel-secao-titulo:first-child { margin-top:0; }
-    .rel-callout { display:flex; gap:12px; border-radius:12px; padding:15px 18px; margin-bottom:18px; }
-    .rel-callout.atencao { background:#fdecec; border:1px solid #f6c6c6; }
-    .rel-callout.ok { background:#e8f7ea; border:1px solid #b9e6c0; }
+    .rel-callout { display:flex; gap:12px; border-radius:6px; padding:15px 18px; margin-bottom:18px; }
+    .rel-callout.atencao { background:var(--erro-bg); border:1px solid #f0c6cc; }
+    .rel-callout.ok { background:var(--ok-bg); border:1px solid #b9e6c0; }
     .rel-callout b { display:block; margin-bottom:3px; font-size:13px; }
-    .rel-callout.atencao b { color:#c0392b; }
-    .rel-callout.ok b { color:#1f8a3b; }
+    .rel-callout.atencao b { color:var(--erro); }
+    .rel-callout.ok b { color:var(--ok); }
     .rel-callout p { font-size:12.5px; color:#444; line-height:1.55; }
 
-    .rel-kpi-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:8px; }
-    .rel-kpi { background:#f6f7fb; border-radius:12px; padding:16px 18px; }
-    .rel-kpi b { display:block; font-size:24px; font-weight:800; margin-bottom:3px; }
-    .rel-kpi span { font-size:11.5px; color:#666; }
-
     .rel-tabela { width:100%; border-collapse:collapse; margin-bottom:20px; font-size:12.5px; }
-    .rel-tabela th { background:#0D1B4B; color:#fff; text-align:left; padding:9px 12px; font-size:10.5px; letter-spacing:0.5px; text-transform:uppercase; }
+    .rel-tabela th { background:var(--ink); color:#fff; text-align:left; padding:9px 12px; font-size:10.5px; letter-spacing:0.5px; text-transform:uppercase; }
     .rel-tabela td { padding:9px 12px; border-bottom:1px solid #eee; }
     .rel-tabela tr:nth-child(even) td { background:#fafafa; }
-    .rel-barra-fundo { background:#eee; border-radius:4px; height:8px; overflow:hidden; width:90px; }
+    .rel-barra-fundo { position:relative; background:#eee; border-radius:4px; height:8px; overflow:visible; width:90px; }
     .rel-barra-preenchida { height:100%; border-radius:4px; }
+    .rel-barra-limite { position:absolute; top:-3px; bottom:-3px; left:70%; width:0; border-left:1.5px dashed #999; }
 
-    .rel-pergunta { border:1px solid #eee; border-radius:10px; padding:14px 16px; margin-bottom:10px; }
+    .rel-pergunta { border:1px solid #eee; border-radius:6px; padding:14px 16px; margin-bottom:10px; }
     .rel-pergunta .enun { font-weight:700; margin-bottom:9px; font-size:12.5px; }
-    .rel-alt { padding:7px 11px; border-radius:8px; font-size:12px; margin-bottom:5px; border:1px solid #eee; }
-    .rel-alt.correta { background:#e8f7ea; border-color:#b9e6c0; color:#1f8a3b; font-weight:600; }
-    .rel-alt.errada-escolhida { background:#fdecec; border-color:#f6c6c6; color:#c0392b; font-weight:600; }
-    .rel-pergunta-aberta { border-left:3px solid #1a5cb5; }
-    .rel-resposta-texto { background:#eef4fc; border:1px solid #cfe0f5; border-radius:8px; padding:10px 12px; font-size:12px; color:#1a1a2e; white-space:pre-wrap; }
+    .rel-resposta-objetiva { padding:9px 12px; border-radius:6px; font-size:12px; font-weight:600; background:var(--bg2); }
+    .rel-resposta-objetiva.certa { background:var(--ok-bg); color:var(--ok); }
+    .rel-resposta-objetiva.errada { background:var(--erro-bg); color:var(--erro); }
+    .rel-resposta-correta-nota { font-size:11.5px; color:var(--ok); margin-top:5px; font-weight:600; }
+    .rel-pergunta-aberta { border-left:3px solid var(--ink); }
+    .rel-resposta-texto { background:var(--bg2); border:1px solid #e4e4ea; border-radius:6px; padding:10px 12px; font-size:12px; color:#1a1a2e; white-space:pre-wrap; margin-bottom:10px; }
+    .rel-avaliacao-rh { font-size:11.5px; color:#555; }
+    .rel-avaliacao-rh strong { color:var(--ink); }
+    .rel-avaliacao-rh .opcoes { display:flex; gap:14px; margin-top:5px; flex-wrap:wrap; }
+    .rel-avaliacao-rh .opcao { display:flex; align-items:center; gap:5px; }
+    .rel-avaliacao-rh .opcao.marcada { font-weight:700; color:var(--ink); }
+    .rel-avaliacao-rh .comentario { margin-top:6px; font-style:italic; color:#666; }
+
+    /* Relatório de grupo */
+    .rel-melhor-nota { display:flex; align-items:center; gap:16px; background:linear-gradient(135deg,#1B1C39,#2C2D55); color:#fff; border-radius:6px; padding:20px 24px; margin-bottom:18px; }
+    .rel-melhor-nota .medalha { font-size:32px; }
+    .rel-melhor-nota b { font-family:'Archivo',sans-serif; font-stretch:125%; display:block; font-size:22px; font-weight:800; }
+    .rel-melhor-nota span { font-size:12px; color:rgba(255,255,255,0.7); }
+    .rel-posicao { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; font-size:11px; font-weight:700; background:var(--bg2); color:var(--ink); }
+    .rel-posicao.ouro { background:#F0C040; color:#5c4300; }
+    .rel-posicao.prata { background:#C7CBD6; color:#3a3d47; }
+    .rel-posicao.bronze { background:#D79A64; color:#4d2e10; }
+
+    .rel-distribuicao-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:18px; }
+    .rel-distribuicao-card { border-radius:6px; padding:16px 18px; text-align:center; }
+    .rel-distribuicao-card.alto { background:var(--ok-bg); }
+    .rel-distribuicao-card.medio { background:#FCF1DA; }
+    .rel-distribuicao-card.baixo { background:var(--erro-bg); }
+    .rel-distribuicao-card b { font-family:'Archivo',sans-serif; font-stretch:125%; display:block; font-size:24px; font-weight:800; }
+    .rel-distribuicao-card.alto b { color:var(--ok); }
+    .rel-distribuicao-card.medio b { color:#8a6a10; }
+    .rel-distribuicao-card.baixo b { color:var(--erro); }
+    .rel-distribuicao-card span { font-size:11.5px; color:#555; }
+
+    .rel-duas-colunas { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .rel-lista-simples { list-style:none; font-size:12.5px; }
+    .rel-lista-simples li { padding:6px 0; border-bottom:1px solid #eee; }
+    .rel-lista-simples li:last-child { border-bottom:none; }
 
     /* Evita cortar um card/pergunta/linha no meio entre duas páginas —
        vale tanto pra Imprimir/Salvar PDF do navegador quanto pro Baixar
        PDF (html2pdf.js respeita essas mesmas regras no modo 'css'). */
-    .rel-pergunta, .rel-kpi, .rel-callout, .rel-capa, .rel-tabela tr { break-inside:avoid; page-break-inside:avoid; }
+    .rel-pergunta, .rel-callout, .rel-capa, .rel-tabela tr, .rel-melhor-nota, .rel-distribuicao-card { break-inside:avoid; page-break-inside:avoid; }
     .rel-secao-titulo { break-after:avoid; page-break-after:avoid; }
 
     /* ── PREVIEW DE PROVA (visão do colaborador, sem anti-cola) ──
@@ -722,11 +751,11 @@
         <div class="tela-header">
           <div>
             <h1>Relatórios</h1>
-            <p>Gere o relatório mensal de um colaborador em PDF.</p>
+            <p>Gere o relatório individual de um colaborador ou o relatório do grupo inteiro num ciclo, em PDF.</p>
           </div>
         </div>
         <div class="panel-card">
-          <div class="panel-card-header"><h3>Gerar relatório</h3></div>
+          <div class="panel-card-header"><h3>Relatório individual</h3></div>
           <div class="add-row">
             <select id="relatorio-colaborador">
               <option value="">— Selecione um colaborador —</option>
@@ -741,6 +770,23 @@
               <select id="relatorio-ano" style="flex:1;"></select>
             </div>
             <button class="btn-add" style="width:100%" id="btn-gerar-relatorio">Gerar Relatório</button>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-card-header"><h3>Relatório de grupo</h3></div>
+          <div class="add-row">
+            <p style="font-size:12px;color:var(--cinza);margin-bottom:2px;">Reúne todos os colaboradores que tiveram atividade no ciclo — ranking, distribuição de desempenho e perguntas com mais erros.</p>
+            <div class="add-row-fields">
+              <select id="relatorio-grupo-mes" style="flex:1;">
+                <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+                <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+                <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+                <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+              </select>
+              <select id="relatorio-grupo-ano" style="flex:1;"></select>
+            </div>
+            <button class="btn-add" style="width:100%" id="btn-gerar-relatorio-grupo">Gerar Relatório de Grupo</button>
           </div>
         </div>
       </section>
@@ -1943,19 +1989,37 @@
     return pct >= 70 ? '#1f8a3b' : (pct >= 40 ? '#c07a12' : '#c0392b');
   }
 
-  function montarHtmlRelatorio(nome, mes, ano, resultados) {
+  // Provas/resultados de um período (mês/ano) — usado pelos dois relatórios.
+  function resultadosDoPeriodo(mes, ano, filtroNome) {
+    const inicio = new Date(ano, mes - 1, 1);
+    const fim    = new Date(ano, mes, 1);
+    return resultadosCache
+      .filter(r => !filtroNome || r.nome === filtroNome)
+      .filter(r => { const d = new Date(r.enviadoEm); return d >= inicio && d < fim; })
+      .sort((a, b) => (a.enviadoEm || '').localeCompare(b.enviadoEm || ''));
+  }
+
+  function montarRelatorioIndividual(nome, mes, ano, resultados) {
     const total = resultados.length;
-    // Só entram na média/melhor/pior as provas com pelo menos uma pergunta
-    // de múltipla escolha (total > 0) — uma prova só com perguntas abertas
-    // não tem nota, e contar como 0% distorceria os números.
+    // Só entram na média/melhor/ponto-forte as provas com pelo menos uma
+    // pergunta de múltipla escolha (total > 0) — uma prova só com
+    // perguntas abertas não tem nota, e contar como 0% distorceria os números.
     const comNota = resultados.filter(r => r.total > 0);
     const percentuaisComNota = comNota.map(r => (r.acertos / r.total) * 100);
     const mediaAcertos = percentuaisComNota.length ? percentuaisComNota.reduce((s, p) => s + p, 0) / percentuaisComNota.length : null;
     const melhor = percentuaisComNota.length ? Math.max(...percentuaisComNota) : null;
-    const pior   = percentuaisComNota.length ? Math.min(...percentuaisComNota) : null;
     const aprovados = percentuaisComNota.filter(p => p >= 70).length;
     const dataEmissao = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
     const fmtPct = v => v === null ? '—' : v.toFixed(0) + '%';
+
+    // Ponto forte = prova com melhor %; ponto de revisão = prova com pior %
+    // (só aparece se ficou abaixo de 70% e é diferente do ponto forte).
+    let pontoForte = null, pontoRevisao = null;
+    comNota.forEach(r => {
+      const pct = (r.acertos / r.total) * 100;
+      if (!pontoForte || pct > pontoForte.pct) pontoForte = { r, pct };
+      if (!pontoRevisao || pct < pontoRevisao.pct) pontoRevisao = { r, pct };
+    });
 
     const linhasTabela = resultados.map(r => {
       const temNota = r.total > 0;
@@ -1967,45 +2031,52 @@
           <td>${data}</td>
           <td>${temNota ? `${r.acertos}/${r.total}` : '—'}</td>
           <td style="${temNota ? `color:${corPorPct(pct)};font-weight:700;` : 'color:#999;'}">${temNota ? pct + '%' : '—'}</td>
-          <td><div class="rel-barra-fundo">${temNota ? `<div class="rel-barra-preenchida" style="width:${pct}%;background:${corPorPct(pct)};"></div>` : ''}</div></td>
+          <td><div class="rel-barra-fundo"><div class="rel-barra-limite"></div>${temNota ? `<div class="rel-barra-preenchida" style="width:${pct}%;background:${corPorPct(pct)};"></div>` : ''}</div></td>
         </tr>`;
     }).join('');
 
+    // Detalhe por prova: NÃO lista as 4 alternativas de perguntas objetivas
+    // (só o que a pessoa respondeu, e a correta quando errou) — quem vê o
+    // relatório é o próprio colaborador ou o RH, não faz sentido expor o
+    // gabarito completo de novo. Nas abertas, mostra a avaliação do RH
+    // (Fase 5) como um checklist.
     const detalhePerguntas = resultados.map(r => `
-      <div class="rel-secao-titulo" style="font-size:14.5px;margin-top:22px;">📝 ${escapeAttr(r.tituloProva || 'Prova')} — ${r.enviadoEm ? new Date(r.enviadoEm).toLocaleDateString('pt-BR') : ''}</div>
+      <div class="rel-secao-titulo" style="font-size:14.5px;margin-top:22px;">${escapeAttr(r.tituloProva || 'Prova')} — ${r.enviadoEm ? new Date(r.enviadoEm).toLocaleDateString('pt-BR') : ''}</div>
       ${(r.perguntas || []).map((p, i) => {
         if (p.tipo === 'aberta') {
+          const aval = avaliacoesAbertasCache.find(a => a.id === r.id + '_' + i);
+          const opcoesHtml = ['adequada', 'parcial', 'inadequada'].map(v =>
+            `<span class="opcao ${aval && aval.avaliacao === v ? 'marcada' : ''}">${aval && aval.avaliacao === v ? '☑' : '☐'} ${LABEL_AVALIACAO[v]}</span>`
+          ).join('');
           return `
             <div class="rel-pergunta rel-pergunta-aberta">
               <div class="enun">${i + 1}. ${escapeAttr(p.enunciado)} <span style="font-weight:400;color:#888;font-size:11px;">(resposta dissertativa)</span></div>
               <div class="rel-resposta-texto">${escapeAttr(p.resposta || '(sem resposta)').replace(/\n/g, '<br>')}</div>
+              <div class="rel-avaliacao-rh">
+                <strong>Avaliação do RH:</strong>
+                <div class="opcoes">${opcoesHtml}</div>
+                ${aval && aval.comentario ? `<div class="comentario">"${escapeAttr(aval.comentario)}"</div>` : ''}
+              </div>
             </div>`;
         }
+        const certa = p.escolhida === p.correta;
+        const textoEscolhida = p.alternativas[p.escolhida] ?? '(sem resposta)';
         return `
           <div class="rel-pergunta">
             <div class="enun">${i + 1}. ${escapeAttr(p.enunciado)}</div>
-            ${p.alternativas.map((a, j) => {
-              let cls = '';
-              if (j === p.correta) cls = 'correta';
-              else if (j === p.escolhida) cls = 'errada-escolhida';
-              const marca = j === p.escolhida && j !== p.correta ? ' (marcado pelo colaborador)' : (j === p.correta ? ' (resposta correta)' : '');
-              return `<div class="rel-alt ${cls}">${escapeAttr(a)}${marca}</div>`;
-            }).join('')}
+            <div class="rel-resposta-objetiva ${certa ? 'certa' : 'errada'}">Respondeu: ${escapeAttr(textoEscolhida)} ${certa ? '✓' : '✗'}</div>
+            ${!certa ? `<div class="rel-resposta-correta-nota">Resposta correta: ${escapeAttr(p.alternativas[p.correta])}</div>` : ''}
           </div>`;
       }).join('') || '<p style="font-size:12.5px;color:#888;">Detalhe não disponível para esta prova.</p>'}
     `).join('');
 
     const resumoTexto = `${escapeAttr(nome)} realizou <b>${total}</b> avaliaç${total === 1 ? 'ão' : 'ões'} em ${NOMES_MESES[mes - 1]} de ${ano}` +
-      (mediaAcertos !== null ? `, com aproveitamento médio de <b>${mediaAcertos.toFixed(1)}%</b>. ` : '. ') +
-      (percentuaisComNota.length === 0 ? 'Nenhuma das provas do período teve correção automática (só perguntas abertas).' :
-       aprovados === percentuaisComNota.length ? 'Todas as avaliações corrigidas automaticamente atingiram a faixa de aprovação (≥70%).' :
-       aprovados === 0 ? 'Nenhuma avaliação atingiu a faixa de aprovação (≥70%) no período.' :
-       `${aprovados} de ${percentuaisComNota.length} avaliaç${percentuaisComNota.length === 1 ? 'ão' : 'ões'} corrigida${percentuaisComNota.length === 1 ? '' : 's'} automaticamente atingiram a faixa de aprovação (≥70%).`);
+      (mediaAcertos !== null ? `, com aproveitamento médio de <b>${mediaAcertos.toFixed(1)}%</b>.` : '.');
 
     return `
       <div class="rel-capa">
         <img class="logo" src="ace2-logo-branco.png" alt="ACE Soluções Contábeis" onerror="this.style.display='none'">
-        <div class="rel-tag">RELATÓRIO MENSAL · ${NOMES_MESES[mes - 1].toUpperCase()} ${ano}</div>
+        <div class="rel-tag">RELATÓRIO INDIVIDUAL · ${NOMES_MESES[mes - 1].toUpperCase()} ${ano}</div>
         <div class="rel-subtag">AVALIAÇÕES DE CONHECIMENTO</div>
         <h1>Relatório de<br>Desempenho</h1>
         <div class="rel-desc">Resultados individuais de avaliação — ${escapeAttr(nome)}</div>
@@ -2019,42 +2090,167 @@
           <div class="stat"><b>${total}</b><span>Provas realizadas</span></div>
           <div class="stat"><b>${fmtPct(mediaAcertos)}</b><span>Média de acertos</span></div>
           <div class="stat"><b>${fmtPct(melhor)}</b><span>Melhor nota</span></div>
-          <div class="stat"><b>${fmtPct(pior)}</b><span>Menor nota</span></div>
+          <div class="stat"><b>${percentuaisComNota.length ? `${aprovados}/${percentuaisComNota.length}` : '—'}</b><span>Aprovações (≥70%)</span></div>
         </div>
       </div>
       <div class="rel-corpo">
-        <div class="rel-secao-titulo">📋 Resumo</div>
+        <div class="rel-secao-titulo">Resumo</div>
         <p style="font-size:13.5px;color:#333;line-height:1.7;margin-bottom:18px;">${resumoTexto}</p>
 
-        ${percentuaisComNota.length && aprovados < percentuaisComNota.length ? `
-        <div class="rel-callout atencao">
-          <span style="font-size:20px;">⚠️</span>
-          <div><b>Ponto de atenção</b><p>${percentuaisComNota.length - aprovados} de ${percentuaisComNota.length} avaliaç${(percentuaisComNota.length - aprovados) === 1 ? 'ão ficou' : 'ões ficaram'} abaixo de 70% de aproveitamento no período.</p></div>
-        </div>` : percentuaisComNota.length ? `
+        ${pontoForte ? `
         <div class="rel-callout ok">
-          <span style="font-size:20px;">✅</span>
-          <div><b>Bom desempenho</b><p>Todas as avaliações corrigidas automaticamente atingiram a faixa de aprovação.</p></div>
+          <span style="font-size:20px;">✓</span>
+          <div><b>Ponto forte</b><p>${escapeAttr(pontoForte.r.tituloProva || 'Prova')} — ${Math.round(pontoForte.pct)}% de acerto.</p></div>
+        </div>` : ''}
+        ${pontoRevisao && pontoRevisao.pct < 70 && pontoRevisao.r !== pontoForte.r ? `
+        <div class="rel-callout atencao">
+          <span style="font-size:20px;">!</span>
+          <div><b>Ponto de revisão</b><p>${escapeAttr(pontoRevisao.r.tituloProva || 'Prova')} — ${Math.round(pontoRevisao.pct)}% de acerto. Vale reforçar esse conteúdo.</p></div>
         </div>` : ''}
 
-        <div class="rel-secao-titulo">📊 Indicadores</div>
-        <div class="rel-kpi-grid">
-          <div class="rel-kpi"><b style="color:#1a5cb5;">${total}</b><span>Provas realizadas</span></div>
-          <div class="rel-kpi"><b style="color:${mediaAcertos === null ? '#999' : corPorPct(mediaAcertos)};">${fmtPct(mediaAcertos)}</b><span>Média de acertos</span></div>
-          <div class="rel-kpi"><b style="color:#1f8a3b;">${percentuaisComNota.length ? `${aprovados}/${percentuaisComNota.length}` : '—'}</b><span>Aprovações (≥70%)</span></div>
-        </div>
-
-        <div class="rel-secao-titulo">🗂️ Provas no Período</div>
+        <div class="rel-secao-titulo">Provas no Período</div>
         <table class="rel-tabela">
-          <thead><tr><th>Prova</th><th>Data</th><th>Acertos</th><th>%</th><th>Progresso</th></tr></thead>
+          <thead><tr><th>Prova</th><th>Data</th><th>Acertos</th><th>%</th><th>Progresso (meta: 70%)</th></tr></thead>
           <tbody>${linhasTabela}</tbody>
         </table>
 
-        <div class="rel-secao-titulo">🔍 Detalhe por Prova</div>
+        <div class="rel-secao-titulo">Detalhe por Prova</div>
         ${detalhePerguntas}
       </div>`;
   }
 
-  let relatorioAtual = null; // { nome, mes, ano } — usado no nome do arquivo do PDF
+  function montarRelatorioGrupo(mes, ano) {
+    const doPeriodo = resultadosDoPeriodo(mes, ano, null);
+    const dataEmissao = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const fmtPct = v => v === null ? '—' : v.toFixed(0) + '%';
+
+    // Ranking por colaborador: média das provas COM nota no período.
+    const porNome = {};
+    doPeriodo.forEach(r => {
+      if (!porNome[r.nome]) porNome[r.nome] = { nome: r.nome, provas: 0, percentuais: [] };
+      porNome[r.nome].provas++;
+      if (r.total > 0) porNome[r.nome].percentuais.push((r.acertos / r.total) * 100);
+    });
+    const ranking = Object.values(porNome).map(p => ({
+      ...p,
+      media: p.percentuais.length ? p.percentuais.reduce((s, v) => s + v, 0) / p.percentuais.length : null
+    })).sort((a, b) => (b.media ?? -1) - (a.media ?? -1));
+
+    const totalProvas = doPeriodo.length;
+    const participantes = ranking.length;
+    const todosPercentuais = ranking.filter(p => p.media !== null).map(p => p.media);
+    const mediaGeral = todosPercentuais.length ? todosPercentuais.reduce((s, v) => s + v, 0) / todosPercentuais.length : null;
+    const aprovadosGeral = todosPercentuais.filter(v => v >= 70).length;
+
+    // Melhor nota do mês = maior % entre TODOS os resultados individuais (não a média por pessoa).
+    let melhorNota = null;
+    doPeriodo.forEach(r => { if (r.total > 0) { const pct = (r.acertos / r.total) * 100; if (!melhorNota || pct > melhorNota.pct) melhorNota = { r, pct }; } });
+
+    const medalhas = ['ouro', 'prata', 'bronze'];
+    const linhasRanking = ranking.map((p, i) => `
+      <tr>
+        <td><span class="rel-posicao ${medalhas[i] || ''}">${i + 1}</span></td>
+        <td>${escapeAttr(p.nome)}</td>
+        <td>${p.provas}</td>
+        <td style="${p.media === null ? 'color:#999;' : `color:${corPorPct(p.media)};font-weight:700;`}">${fmtPct(p.media)}</td>
+        <td><div class="rel-barra-fundo"><div class="rel-barra-limite"></div>${p.media !== null ? `<div class="rel-barra-preenchida" style="width:${p.media}%;background:${corPorPct(p.media)};"></div>` : ''}</div></td>
+      </tr>`).join('');
+
+    const alto = ranking.filter(p => p.media !== null && p.media >= 70).length;
+    const medio = ranking.filter(p => p.media !== null && p.media >= 40 && p.media < 70).length;
+    const baixo = ranking.filter(p => p.media !== null && p.media < 40).length;
+
+    // Perguntas com mais erros: agrupa por (provaId + índice), já que o
+    // enunciado fica congelado no resultado mesmo se a prova mudar depois.
+    const porPergunta = {};
+    doPeriodo.forEach(r => {
+      (r.perguntas || []).forEach((p, i) => {
+        if (p.tipo !== 'multipla') return;
+        const chave = (r.provaId || '?') + '|' + i;
+        if (!porPergunta[chave]) porPergunta[chave] = { enunciado: p.enunciado, tituloProva: r.tituloProva, total: 0, erros: 0 };
+        porPergunta[chave].total++;
+        if (p.escolhida !== p.correta) porPergunta[chave].erros++;
+      });
+    });
+    const maisErradas = Object.values(porPergunta)
+      .filter(q => q.total > 0)
+      .map(q => ({ ...q, taxaErro: q.erros / q.total }))
+      .sort((a, b) => b.taxaErro - a.taxaErro)
+      .slice(0, 5);
+
+    // Participação/pendências: provas cujo ciclo bate com o período
+    // escolhido (mesma herança de ciclo usada na tela Aplicação), cruzando
+    // com a situação computada de cada colaborador autorizado a elas.
+    const provasDoCiclo = provasCache.filter(p => (p.cicloMes || cicloAtual().mes) === mes && (p.cicloAno || cicloAtual().ano) === ano).map(p => p.id);
+    const relevantes = autorizadosCache.filter(c => c.provaId && provasDoCiclo.includes(c.provaId));
+    const participaram = relevantes.filter(c => situacaoColaborador(c) === 'enviou');
+    const pendentes    = relevantes.filter(c => situacaoColaborador(c) !== 'enviou');
+
+    return `
+      <div class="rel-capa">
+        <img class="logo" src="ace2-logo-branco.png" alt="ACE Soluções Contábeis" onerror="this.style.display='none'">
+        <div class="rel-tag">RELATÓRIO DE GRUPO · ${NOMES_MESES[mes - 1].toUpperCase()} ${ano}</div>
+        <div class="rel-subtag">AVALIAÇÕES DE CONHECIMENTO</div>
+        <h1>Relatório de<br>Desempenho do Grupo</h1>
+        <div class="rel-desc">Panorama de todos os colaboradores no ciclo</div>
+        <div class="rel-divider"></div>
+        <div class="rel-meta-row">
+          <div class="item"><span>Data de Emissão</span><strong>${dataEmissao}</strong></div>
+          <div class="item"><span>Período</span><strong>${NOMES_MESES[mes - 1]} de ${ano}</strong></div>
+        </div>
+        <div class="rel-stat-strip">
+          <div class="stat"><b>${totalProvas}</b><span>Provas realizadas</span></div>
+          <div class="stat"><b>${participantes}</b><span>Colaboradores participantes</span></div>
+          <div class="stat"><b>${fmtPct(mediaGeral)}</b><span>Média geral</span></div>
+          <div class="stat"><b>${todosPercentuais.length ? `${aprovadosGeral}/${todosPercentuais.length}` : '—'}</b><span>Aprovações (≥70%)</span></div>
+        </div>
+      </div>
+      <div class="rel-corpo">
+        <div class="rel-secao-titulo">Resumo</div>
+        <p style="font-size:13.5px;color:#333;line-height:1.7;margin-bottom:18px;">${participantes} colaborador${participantes === 1 ? '' : 'es'} realizou${participantes === 1 ? '' : 'ram'} <b>${totalProvas}</b> avaliaç${totalProvas === 1 ? 'ão' : 'ões'} em ${NOMES_MESES[mes - 1]} de ${ano}${mediaGeral !== null ? `, com aproveitamento médio de <b>${mediaGeral.toFixed(1)}%</b>.` : '.'}</p>
+
+        ${melhorNota ? `
+        <div class="rel-melhor-nota">
+          <span class="medalha">🏆</span>
+          <div><b>${escapeAttr(melhorNota.r.nome)} — ${Math.round(melhorNota.pct)}%</b><span>Melhor nota do mês · ${escapeAttr(melhorNota.r.tituloProva || 'Prova')}</span></div>
+        </div>` : ''}
+
+        <div class="rel-secao-titulo">Ranking do Ciclo</div>
+        ${ranking.length ? `
+        <table class="rel-tabela">
+          <thead><tr><th></th><th>Colaborador</th><th>Provas</th><th>Média</th><th>Progresso (meta: 70%)</th></tr></thead>
+          <tbody>${linhasRanking}</tbody>
+        </table>` : '<p style="font-size:12.5px;color:#888;">Nenhum resultado no período.</p>'}
+
+        <div class="rel-secao-titulo">Distribuição de Desempenho</div>
+        <div class="rel-distribuicao-grid">
+          <div class="rel-distribuicao-card alto"><b>${alto}</b><span>Alto (≥70%)</span></div>
+          <div class="rel-distribuicao-card medio"><b>${medio}</b><span>Médio (40–69%)</span></div>
+          <div class="rel-distribuicao-card baixo"><b>${baixo}</b><span>Baixo (&lt;40%)</span></div>
+        </div>
+
+        <div class="rel-secao-titulo">Perguntas com Mais Erros</div>
+        ${maisErradas.length ? maisErradas.map(q => `
+          <div class="rel-pergunta">
+            <div class="enun">${escapeAttr(q.enunciado)} <span style="font-weight:400;color:#888;font-size:11px;">— ${escapeAttr(q.tituloProva || 'Prova')}</span></div>
+            <div class="rel-resposta-objetiva errada">${q.erros} de ${q.total} erraram (${Math.round(q.taxaErro * 100)}%)</div>
+          </div>`).join('') : '<p style="font-size:12.5px;color:#888;">Sem perguntas de múltipla escolha respondidas no período.</p>'}
+
+        <div class="rel-secao-titulo">Participação e Pendências</div>
+        <div class="rel-duas-colunas">
+          <div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--ok);margin-bottom:8px;">Participaram (${participaram.length})</div>
+            <ul class="rel-lista-simples">${participaram.length ? participaram.map(c => `<li>${escapeAttr(c.nome)}</li>`).join('') : '<li style="color:#999;">Ninguém ainda.</li>'}</ul>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:var(--erro);margin-bottom:8px;">Pendentes (${pendentes.length})</div>
+            <ul class="rel-lista-simples">${pendentes.length ? pendentes.map(c => `<li>${escapeAttr(c.nome)}</li>`).join('') : '<li style="color:#999;">Ninguém pendente.</li>'}</ul>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  let relatorioAtual = null; // { tipo, nome, mes, ano } — usado no nome do arquivo do PDF
 
   window.gerarRelatorio = function() {
     const nome = document.getElementById('relatorio-colaborador').value;
@@ -2062,20 +2258,29 @@
     const ano  = parseInt(document.getElementById('relatorio-ano').value, 10);
     if (!nome) { alert('Selecione um colaborador.'); return; }
 
-    const inicio = new Date(ano, mes - 1, 1);
-    const fim    = new Date(ano, mes, 1);
-    const doPeriodo = resultadosCache
-      .filter(r => r.nome === nome)
-      .filter(r => { const d = new Date(r.enviadoEm); return d >= inicio && d < fim; })
-      .sort((a, b) => (a.enviadoEm || '').localeCompare(b.enviadoEm || ''));
-
+    const doPeriodo = resultadosDoPeriodo(mes, ano, nome);
     if (!doPeriodo.length) {
       alert(`Nenhum resultado de ${nome} em ${NOMES_MESES[mes - 1]}/${ano}.`);
       return;
     }
 
-    relatorioAtual = { nome, mes, ano };
-    document.getElementById('relatorio-doc').innerHTML = montarHtmlRelatorio(nome, mes, ano, doPeriodo);
+    relatorioAtual = { tipo: 'individual', nome, mes, ano };
+    document.getElementById('relatorio-doc').innerHTML = montarRelatorioIndividual(nome, mes, ano, doPeriodo);
+    document.getElementById('secao-relatorio').style.display = 'block';
+    window.scrollTo(0, 0);
+  };
+
+  window.gerarRelatorioGrupo = function() {
+    const mes = parseInt(document.getElementById('relatorio-grupo-mes').value, 10);
+    const ano = parseInt(document.getElementById('relatorio-grupo-ano').value, 10);
+
+    if (!resultadosDoPeriodo(mes, ano, null).length) {
+      alert(`Nenhum resultado em ${NOMES_MESES[mes - 1]}/${ano}.`);
+      return;
+    }
+
+    relatorioAtual = { tipo: 'grupo', mes, ano };
+    document.getElementById('relatorio-doc').innerHTML = montarRelatorioGrupo(mes, ano);
     document.getElementById('secao-relatorio').style.display = 'block';
     window.scrollTo(0, 0);
   };
@@ -2101,7 +2306,9 @@
     const el  = document.getElementById('relatorio-doc');
     const btn = document.getElementById('btn-baixar-pdf');
     const nomeArquivo = relatorioAtual
-      ? `relatorio_${relatorioAtual.nome.replace(/\s+/g, '_')}_${NOMES_MESES[relatorioAtual.mes - 1]}_${relatorioAtual.ano}.pdf`
+      ? (relatorioAtual.tipo === 'grupo'
+          ? `relatorio_grupo_${NOMES_MESES[relatorioAtual.mes - 1]}_${relatorioAtual.ano}.pdf`
+          : `relatorio_${relatorioAtual.nome.replace(/\s+/g, '_')}_${NOMES_MESES[relatorioAtual.mes - 1]}_${relatorioAtual.ano}.pdf`)
       : 'relatorio.pdf';
 
     btn.disabled = true;
@@ -2141,20 +2348,22 @@
   (function initSeletoresRelatorio() {
     const hoje    = new Date();
     const anoAtual = hoje.getFullYear();
-    const selAno  = document.getElementById('relatorio-ano');
-    if (selAno) {
-      selAno.innerHTML = [anoAtual + 1, anoAtual, anoAtual - 1, anoAtual - 2]
-        .map(a => `<option value="${a}">${a}</option>`).join('');
-      selAno.value = String(anoAtual);
-    }
-    const selMes = document.getElementById('relatorio-mes');
-    if (selMes) selMes.value = String(hoje.getMonth() + 1);
+    const anos = [anoAtual + 1, anoAtual, anoAtual - 1, anoAtual - 2].map(a => `<option value="${a}">${a}</option>`).join('');
+    ['relatorio-ano', 'relatorio-grupo-ano'].forEach(id => {
+      const sel = document.getElementById(id);
+      if (sel) { sel.innerHTML = anos; sel.value = String(anoAtual); }
+    });
+    ['relatorio-mes', 'relatorio-grupo-mes'].forEach(id => {
+      const sel = document.getElementById(id);
+      if (sel) sel.value = String(hoje.getMonth() + 1);
+    });
   })();
 
   // ── Listeners de botão (compatível com type="module") ──
   document.getElementById('btn-entrar')   ?.addEventListener('click', () => window.fazerLogin());
   document.getElementById('btn-logout')   ?.addEventListener('click', () => window.logout());
   document.getElementById('btn-adicionar')?.addEventListener('click', () => window.adicionarColaborador());
+  document.getElementById('btn-gerar-relatorio-grupo')?.addEventListener('click', () => window.gerarRelatorioGrupo());
   document.getElementById('btn-gerar-relatorio')?.addEventListener('click', () => window.gerarRelatorio());
 
   document.getElementById('input-email')?.addEventListener('keydown', e => {
