@@ -217,6 +217,26 @@
     .prova-linha-titulo { font-size:13.5px; font-weight:600; color:var(--ink); }
     .prova-linha-sub { font-size:11.5px; color:var(--cinza-claro); margin-top:2px; }
 
+    /* Agrupamento por mês (Provas) e por prova (Aplicação) */
+    .grupo-cabecalho {
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:11px 16px; background:var(--bg2); cursor:pointer; user-select:none;
+      border-bottom:1px solid var(--divisor);
+    }
+    .grupo-cabecalho:hover { background:var(--suave); }
+    .grupo-cabecalho .grupo-titulo {
+      font-family:'Archivo',sans-serif; font-stretch:125%; font-weight:700; font-size:12px;
+      text-transform:uppercase; letter-spacing:0.4px; color:var(--ink); display:flex; align-items:center; gap:8px;
+    }
+    .grupo-cabecalho .grupo-sub { font-family:'Lexend',sans-serif; font-weight:400; font-size:11px; text-transform:none; color:var(--cinza-claro); letter-spacing:normal; }
+    .grupo-cabecalho .chevron { color:var(--cinza-claro); font-size:11px; flex-shrink:0; transition:transform 0.15s; }
+    .grupo-cabecalho.colapsado .chevron { transform:rotate(-90deg); }
+    .grupo-mes { border-bottom:1px solid var(--divisor); }
+    .grupo-mes:last-child { border-bottom:none; }
+    .grupo-mes .grupo-cabecalho { background:#fff; padding:13px 20px; }
+    .grupo-prova-card { background:#fff; border:1px solid var(--linha); border-radius:6px; overflow:hidden; margin-bottom:14px; }
+    .grupo-prova-card:last-child { margin-bottom:0; }
+
     .painel-detalhe { position:sticky; top:20px; background:#fff; border:1px solid var(--linha); border-radius:6px; overflow:hidden; }
     .painel-detalhe-header { padding:18px 20px; border-bottom:1px solid var(--divisor); }
     .painel-detalhe-header h3 { font-size:15px; font-weight:700; color:var(--ink); margin-bottom:4px; }
@@ -654,7 +674,6 @@
           <button class="chip-filtro" data-status="rascunho" onclick="window.filtrarProvasStatus('rascunho', this)">Rascunho</button>
           <button class="chip-filtro" data-status="publicada" onclick="window.filtrarProvasStatus('publicada', this)">Publicada</button>
           <button class="chip-filtro" data-status="encerrada" onclick="window.filtrarProvasStatus('encerrada', this)">Encerrada</button>
-          <button class="chip-filtro" id="chip-todos-ciclos" onclick="window.alternarTodosCiclosProvas()">Todos os ciclos</button>
         </div>
 
         <div class="provas-layout">
@@ -703,12 +722,7 @@
           <button class="chip-filtro" data-sit="saiu" onclick="window.filtrarAplicacaoSituacao('saiu', this)">Saiu</button>
         </div>
 
-        <div class="tabela2-wrap">
-          <table class="tabela2">
-            <thead><tr><th>Colaborador</th><th>Prova</th><th>Situação</th><th></th></tr></thead>
-            <tbody id="lista-aplicacao"></tbody>
-          </table>
-        </div>
+        <div id="lista-aplicacao"></div>
       </section>
 
       <!-- CORREÇÃO -->
@@ -862,8 +876,9 @@
   let andamentoCache          = []; // docs de provas_em_andamento (mesmo id de autorizados/bloqueados)
   let cicloSelecionado        = cicloAtual();
   let filtroProvasStatus      = '';
-  let filtroProvasTodosCiclos = false;
+  let provasGruposColapsados  = new Set();
   let filtroAplicacaoSituacao = '';
+  let aplicacaoGruposColapsados = new Set();
   let provaSelecionadaId      = null;
   let abaProvaAtiva           = 'perguntas';
   let usuarioEmail            = '';
@@ -1514,35 +1529,66 @@
     renderProvasFiltradasInterno();
   };
 
-  window.alternarTodosCiclosProvas = function() {
-    filtroProvasTodosCiclos = !filtroProvasTodosCiclos;
-    document.getElementById('chip-todos-ciclos').classList.toggle('ativo', filtroProvasTodosCiclos);
+  window.renderProvasFiltradas = function() { renderProvasFiltradasInterno(); };
+
+  window.alternarGrupoProvas = function(chave) {
+    if (provasGruposColapsados.has(chave)) provasGruposColapsados.delete(chave);
+    else provasGruposColapsados.add(chave);
     renderProvasFiltradasInterno();
   };
 
-  window.renderProvasFiltradas = function() { renderProvasFiltradasInterno(); };
+  function provaLinhaHtml(p) {
+    const statusLabel = { rascunho: 'Rascunho', publicada: 'Publicada', encerrada: 'Encerrada' }[provaStatusEfetivo(p)];
+    return `
+      <div class="prova-linha-item ${p.id === provaSelecionadaId ? 'selecionada' : ''}" onclick="window.abrirDetalheProva('${p.id}')">
+        <div>
+          <div class="prova-linha-titulo">${escapeAttr(p.titulo)}</div>
+          <div class="prova-linha-sub"><span class="badge-status ${provaStatusEfetivo(p)}">${statusLabel}</span> · ${p.perguntas.length} pergunta${p.perguntas.length === 1 ? '' : 's'}${p.dono ? ' · ' + escapeAttr(p.dono) : ''}</div>
+        </div>
+      </div>`;
+  }
 
+  // Provas agrupadas por mês/ano (ciclo), mais recente primeiro — sempre
+  // visível (sem precisar trocar o seletor da sidebar), pra não amontoar
+  // tudo numa lista só conforme mais provas vão sendo cadastradas.
   function renderProvasFiltradasInterno() {
     const busca = (document.getElementById('provas-busca')?.value || '').trim().toLowerCase();
     const lista = provasCache.filter(p => {
       if (filtroProvasStatus && provaStatusEfetivo(p) !== filtroProvasStatus) return false;
-      if (!filtroProvasTodosCiclos && !cicloBate({ mes: p.cicloMes || cicloAtual().mes, ano: p.cicloAno || cicloAtual().ano })) return false;
       if (busca && !p.titulo.toLowerCase().includes(busca) && !(p.dono || '').toLowerCase().includes(busca)) return false;
       return true;
     });
 
     document.getElementById('lbl-provas').textContent = lista.length;
     const el = document.getElementById('lista-provas');
-    el.innerHTML = lista.length ? lista.map(p => {
-      const statusLabel = { rascunho: 'Rascunho', publicada: 'Publicada', encerrada: 'Encerrada' }[provaStatusEfetivo(p)];
+
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty-state"><div class="es-icon">📝</div>Nenhuma prova encontrada.</div>';
+      if (provaSelecionadaId) { provaSelecionadaId = null; renderPainelDetalheProva(); }
+      return;
+    }
+
+    const grupos = new Map(); // "ano-mes" -> { mes, ano, provas: [] }
+    lista.forEach(p => {
+      const c = cicloAtual();
+      const mes = p.cicloMes || c.mes, ano = p.cicloAno || c.ano;
+      const chave = ano + '-' + mes;
+      if (!grupos.has(chave)) grupos.set(chave, { mes, ano, provas: [] });
+      grupos.get(chave).provas.push(p);
+    });
+    const gruposOrdenados = [...grupos.entries()].sort((a, b) => b[1].ano - a[1].ano || b[1].mes - a[1].mes);
+
+    el.innerHTML = gruposOrdenados.map(([chave, g]) => {
+      const colapsado = provasGruposColapsados.has(chave);
       return `
-        <div class="prova-linha-item ${p.id === provaSelecionadaId ? 'selecionada' : ''}" onclick="window.abrirDetalheProva('${p.id}')">
-          <div>
-            <div class="prova-linha-titulo">${escapeAttr(p.titulo)}</div>
-            <div class="prova-linha-sub"><span class="badge-status ${provaStatusEfetivo(p)}">${statusLabel}</span> · ${p.perguntas.length} pergunta${p.perguntas.length === 1 ? '' : 's'}${p.dono ? ' · ' + escapeAttr(p.dono) : ''}</div>
+        <div class="grupo-mes">
+          <div class="grupo-cabecalho ${colapsado ? 'colapsado' : ''}" onclick="window.alternarGrupoProvas('${chave}')">
+            <span class="grupo-titulo">${NOMES_MESES[g.mes - 1]} ${g.ano} <span class="grupo-sub">${g.provas.length} prova${g.provas.length === 1 ? '' : 's'}</span></span>
+            <span class="chevron">▾</span>
           </div>
+          <div style="display:${colapsado ? 'none' : 'block'};">${g.provas.map(provaLinhaHtml).join('')}</div>
         </div>`;
-    }).join('') : '<div class="empty-state"><div class="es-icon">📝</div>Nenhuma prova encontrada.</div>';
+    }).join('');
 
     if (provaSelecionadaId && !lista.some(p => p.id === provaSelecionadaId)) provaSelecionadaId = null;
     renderPainelDetalheProva();
@@ -1644,50 +1690,98 @@
     }
   };
 
+  window.alternarGrupoAplicacao = function(chave) {
+    if (aplicacaoGruposColapsados.has(chave)) aplicacaoGruposColapsados.delete(chave);
+    else aplicacaoGruposColapsados.add(chave);
+    renderAplicacao();
+  };
+
+  function linhaAplicacaoHtml(c) {
+    const sit      = situacaoColaborador(c);
+    const nomeJs   = c.nome.replace(/'/g, "\\'");
+    const podeTrocar = sit === 'nao';
+    return `
+      <tr>
+        <td>
+          <div class="item-info">
+            <div class="item-avatar ${sit === 'saiu' ? 'blocked' : ''}">${iniciais(c.nome)}</div>
+            <div>
+              <div class="item-name">${escapeAttr(c.nome)}</div>
+              ${podeTrocar ? `
+                <button class="btn-edit" style="margin-top:4px;padding:2px 7px;font-size:10px;" onclick="window.alternarEdicaoProva('${c.id}')">✎ ${c.provaId ? 'Trocar' : 'Atribuir'} prova</button>
+                <div class="edit-link-row" id="edit-${c.id}" style="display:none;padding:6px 0 0;">
+                  <select id="prova-${c.id}" class="select-prova" data-provaid="${escapeAttr(c.provaId || '')}">
+                    <option value="">— Selecione uma prova —</option>
+                  </select>
+                  <button class="btn-add" onclick="window.salvarProvaColaborador('${c.id}', '${nomeJs}')">Salvar</button>
+                </div>` : ''}
+            </div>
+          </div>
+        </td>
+        <td><span class="badge-situacao ${sit}">${LABEL_SITUACAO[sit]}</span></td>
+        <td style="text-align:right;white-space:nowrap;">
+          ${sit === 'saiu' ? `<button class="btn-unlock" onclick="window.desbloquear('${c.id}')">Liberar tentativa</button>` : ''}
+          <button class="btn-remove" onclick="window.removerColaborador('${c.id}', '${nomeJs}')">Remover</button>
+        </td>
+      </tr>`;
+  }
+
+  // Aplicação agrupada por prova, filtrada pelo ciclo selecionado na
+  // sidebar — mesma lógica de herança de ciclo da tela Início (decisão
+  // de arquitetura da Fase 3/4: uma linha de Aplicação herda o ciclo da
+  // prova vinculada). Sem prova atribuída e "saiu" (bloqueado) aparecem
+  // sempre, em qualquer ciclo, porque são estados urgentes.
   function renderAplicacao() {
     const busca = (document.getElementById('aplicacao-busca')?.value || '').trim().toLowerCase();
-    const lista = autorizadosCache.filter(c => {
+    const visiveis = autorizadosCache.filter(c => {
       if (busca && !c.nome.toLowerCase().includes(busca)) return false;
-      if (filtroAplicacaoSituacao && situacaoColaborador(c) !== filtroAplicacaoSituacao) return false;
-      return true;
+      const sit = situacaoColaborador(c);
+      if (filtroAplicacaoSituacao && sit !== filtroAplicacaoSituacao) return false;
+      if (!c.provaId) return true;
+      if (sit === 'saiu') return true;
+      return cicloBate(cicloDaProva(c.provaId));
     });
 
     const el = document.getElementById('lista-aplicacao');
     if (!el) return;
-    if (!lista.length) {
-      el.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="es-icon">👥</div>Nenhum colaborador encontrado.</div></td></tr>`;
+    if (!visiveis.length) {
+      el.innerHTML = '<div class="card2"><div class="empty-state"><div class="es-icon">👥</div>Nenhum colaborador encontrado neste ciclo.</div></div>';
       return;
     }
-    el.innerHTML = lista.map(c => {
-      const sit      = situacaoColaborador(c);
-      const nomeJs   = c.nome.replace(/'/g, "\\'");
-      const prova    = provasCache.find(p => p.id === c.provaId);
-      const provaTxt = prova ? escapeAttr(prova.titulo) : 'Sem prova atribuída';
-      const provaCel = sit === 'nao'
-        ? `<span id="prova-txt-${c.id}">${provaTxt}</span>
-           <button class="btn-edit" style="margin-left:6px;padding:3px 8px;" onclick="window.alternarEdicaoProva('${c.id}')">✎</button>
-           <span class="edit-link-row" id="edit-${c.id}" style="display:none;padding:6px 0 0;">
-             <select id="prova-${c.id}" class="select-prova" data-provaid="${escapeAttr(c.provaId || '')}">
-               <option value="">— Selecione uma prova —</option>
-             </select>
-             <button class="btn-add" onclick="window.salvarProvaColaborador('${c.id}', '${nomeJs}')">Salvar</button>
-           </span>`
-        : `${provaTxt}${prova ? ' <span style="color:var(--cinza-claro);font-size:11px;">(travado)</span>' : ''}`;
+
+    const grupos = new Map(); // provaId||'' -> { prova, colaboradores: [] }
+    visiveis.forEach(c => {
+      const chave = c.provaId || '';
+      if (!grupos.has(chave)) grupos.set(chave, { prova: chave ? provasCache.find(p => p.id === chave) : null, colaboradores: [] });
+      grupos.get(chave).colaboradores.push(c);
+    });
+    const gruposOrdenados = [...grupos.entries()].sort(([ka, va], [kb, vb]) => {
+      if (ka === '') return -1;
+      if (kb === '') return 1;
+      return (va.prova?.titulo || '').localeCompare(vb.prova?.titulo || '', 'pt-BR');
+    });
+
+    el.innerHTML = gruposOrdenados.map(([chave, grupo]) => {
+      const chaveGrupo = chave || 'sem-prova';
+      const colapsado  = aplicacaoGruposColapsados.has(chaveGrupo);
+      const enviaram   = grupo.colaboradores.filter(c => situacaoColaborador(c) === 'enviou').length;
+      const tituloGrupo = grupo.prova ? escapeAttr(grupo.prova.titulo) : 'Sem prova atribuída';
+      const statusLabel = grupo.prova ? { rascunho: 'Rascunho', publicada: 'Publicada', encerrada: 'Encerrada' }[provaStatusEfetivo(grupo.prova)] : '';
+      const statusBadge = grupo.prova ? `<span class="badge-status ${provaStatusEfetivo(grupo.prova)}">${statusLabel}</span>` : '';
+      const subGrupo = grupo.prova ? `${enviaram} de ${grupo.colaboradores.length} enviaram` : `${grupo.colaboradores.length} pendente${grupo.colaboradores.length === 1 ? '' : 's'}`;
       return `
-        <tr>
-          <td>
-            <div class="item-info">
-              <div class="item-avatar ${sit === 'saiu' ? 'blocked' : ''}">${iniciais(c.nome)}</div>
-              <div class="item-name">${escapeAttr(c.nome)}</div>
-            </div>
-          </td>
-          <td>${provaCel}</td>
-          <td><span class="badge-situacao ${sit}">${LABEL_SITUACAO[sit]}</span></td>
-          <td style="text-align:right;white-space:nowrap;">
-            ${sit === 'saiu' ? `<button class="btn-unlock" onclick="window.desbloquear('${c.id}')">Liberar tentativa</button>` : ''}
-            <button class="btn-remove" onclick="window.removerColaborador('${c.id}', '${nomeJs}')">Remover</button>
-          </td>
-        </tr>`;
+        <div class="grupo-prova-card">
+          <div class="grupo-cabecalho ${colapsado ? 'colapsado' : ''}" onclick="window.alternarGrupoAplicacao('${chaveGrupo}')">
+            <span class="grupo-titulo">${tituloGrupo} ${statusBadge}<span class="grupo-sub">${subGrupo}</span></span>
+            <span class="chevron">▾</span>
+          </div>
+          <div style="display:${colapsado ? 'none' : 'block'};">
+            <table class="tabela2">
+              <thead><tr><th>Colaborador</th><th>Situação</th><th></th></tr></thead>
+              <tbody>${grupo.colaboradores.map(linhaAplicacaoHtml).join('')}</tbody>
+            </table>
+          </div>
+        </div>`;
     }).join('');
 
     // Popula os <select class="select-prova"> que acabaram de entrar no DOM.
