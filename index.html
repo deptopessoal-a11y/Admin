@@ -235,6 +235,30 @@
     .barra-acerto-preenchida { height:100%; background:var(--ink); border-radius:4px; }
     .barra-acerto-pct { flex:0 0 34px; text-align:right; font-weight:700; color:var(--ink); }
 
+    /* Correção — avaliação de respostas dissertativas */
+    .correcao-item { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; padding:12px 16px; border-bottom:1px solid var(--divisor); cursor:pointer; }
+    .correcao-item:last-child { border-bottom:none; }
+    .correcao-item:hover { background:var(--bg2); }
+    .correcao-item.selecionada { background:var(--suave); }
+    .correcao-item-nome { font-size:13px; font-weight:600; color:var(--ink); }
+    .correcao-item-sub { font-size:11.5px; color:var(--cinza-claro); margin-top:2px; }
+    .badge-avaliacao { display:inline-block; font-size:10px; font-weight:700; letter-spacing:0.3px; text-transform:uppercase; padding:2px 8px; border-radius:20px; flex-shrink:0; margin-top:1px; }
+    .badge-avaliacao.pendente { background:var(--suave); color:var(--cinza); }
+    .badge-avaliacao.adequada { background:var(--ok-bg); color:var(--ok); }
+    .badge-avaliacao.parcial { background:#FCF1DA; color:#8a6a10; }
+    .badge-avaliacao.inadequada { background:var(--erro-bg); color:var(--erro); }
+
+    .aval-opcoes { display:flex; gap:8px; margin:14px 0; flex-wrap:wrap; }
+    .aval-btn { flex:1; min-width:120px; background:#fff; border:1.5px solid var(--linha); color:var(--cinza); font-family:'Lexend',sans-serif; font-size:12.5px; font-weight:600; padding:11px 10px; border-radius:4px; cursor:pointer; text-align:center; transition:background 0.15s,border-color 0.15s; }
+    .aval-btn.adequada.ativa { background:var(--ok-bg); border-color:var(--ok); color:var(--ok); }
+    .aval-btn.parcial.ativa { background:#FCF1DA; border-color:#C69214; color:#8a6a10; }
+    .aval-btn.inadequada.ativa { background:var(--erro-bg); border-color:var(--erro); color:var(--erro); }
+    .correcao-comentario {
+      width:100%; background:#fff; border:1px solid var(--borda-input); border-radius:4px; color:var(--ink);
+      font-family:'Lexend',sans-serif; font-size:13px; padding:10px 14px; outline:none; resize:vertical; min-height:70px;
+    }
+    .correcao-comentario:focus { border-color:var(--ink); }
+
     /* ── Primitivas compartilhadas (form de provas, cards de Resultados/
        Relatórios, login) — reformadas junto pra não ficar tema misto. ── */
     .panel-card {
@@ -523,7 +547,7 @@
         <div class="sidebar-link ativo" data-tela="inicio" onclick="window.mostrarTela('inicio')"><span>Início</span></div>
         <div class="sidebar-link" data-tela="provas" onclick="window.mostrarTela('provas')"><span>Provas</span><span class="sidebar-badge" id="badge-provas" style="display:none">0</span></div>
         <div class="sidebar-link" data-tela="aplicacao" onclick="window.mostrarTela('aplicacao')"><span>Aplicação</span><span class="sidebar-badge" id="badge-aplicacao" style="display:none">0</span></div>
-        <div class="sidebar-link" data-tela="correcao" onclick="window.mostrarTela('correcao')"><span>Correção</span></div>
+        <div class="sidebar-link" data-tela="correcao" onclick="window.mostrarTela('correcao')"><span>Correção</span><span class="sidebar-badge" id="badge-correcao" style="display:none">0</span></div>
         <div class="sidebar-link" data-tela="resultados" onclick="window.mostrarTela('resultados')"><span>Resultados</span></div>
         <div class="sidebar-grupo-titulo">Saída</div>
         <div class="sidebar-link" data-tela="relatorios" onclick="window.mostrarTela('relatorios')"><span>Relatórios</span></div>
@@ -652,10 +676,13 @@
         <div class="tela-header">
           <div>
             <h1>Correção</h1>
-            <p>Avaliação das respostas dissertativas.</p>
+            <p>Avalie as respostas dissertativas enviadas pelos colaboradores — o resultado aparece no relatório individual.</p>
           </div>
         </div>
-        <div class="card2"><div class="empty2">Em construção — chega na próxima etapa da reforma.</div></div>
+        <div class="provas-layout">
+          <div class="card2" id="correcao-workspace" style="margin-bottom:0;"></div>
+          <div class="painel-detalhe" id="correcao-fila"></div>
+        </div>
       </section>
 
       <!-- RESULTADOS -->
@@ -781,6 +808,7 @@
   let filtroAplicacaoSituacao = '';
   let provaSelecionadaId      = null;
   let abaProvaAtiva           = 'perguntas';
+  let usuarioEmail            = '';
 
   // LOGIN (Firebase Auth de verdade — a validação da senha acontece nos
   // servidores do Firebase, não mais comparando hash no navegador)
@@ -846,7 +874,8 @@
       document.getElementById('secao-login').style.display   = 'none';
       document.getElementById('header-login').style.display  = 'none';
       document.getElementById('painel-shell').classList.add('ativo');
-      document.getElementById('sidebar-email').textContent   = user.email || '';
+      usuarioEmail = user.email || '';
+      document.getElementById('sidebar-email').textContent   = usuarioEmail;
       atualizarLabelCiclo();
       carregarDados();
     } else {
@@ -903,10 +932,23 @@
         andamentoCache = [];
       }
 
+      // "avaliacoes_abertas" é coleção nova (Fase 3/5) — se a regra ainda
+      // não foi aplicada no Console do Firebase, a tela de Correção some
+      // com pendentes zeradas em vez de derrubar o resto do painel.
+      try {
+        const snapAvaliacoes = await getDocs(collection(db, 'avaliacoes_abertas'));
+        avaliacoesAbertasCache = [];
+        snapAvaliacoes.forEach(d => avaliacoesAbertasCache.push({ id: d.id, ...d.data() }));
+      } catch(e) {
+        console.error('[ACE Admin] Erro ao carregar avaliações abertas:', e);
+        avaliacoesAbertasCache = [];
+      }
+
       renderProvas(provasCache);
       renderResultados(resultadosCache);
       renderInicio();
       renderAplicacao();
+      renderCorrecao();
     } catch(e) {
       alert('Erro ao carregar dados. Verifique sua conexão.');
     }
@@ -975,6 +1017,10 @@
     provasCache.filter(p => provaStatusEfetivo(p) === 'rascunho' && cicloBate({ mes: p.cicloMes || cicloAtual().mes, ano: p.cicloAno || cicloAtual().ano })).forEach(p => {
       pend.push({ texto: `A prova <strong>${escapeAttr(p.titulo)}</strong> ainda está em rascunho`, tela: 'provas' });
     });
+    const nPendCorrecao = itensAbertos().filter(i => !i.avaliacao).length;
+    if (nPendCorrecao) {
+      pend.push({ texto: `<strong>${nPendCorrecao}</strong> resposta${nPendCorrecao === 1 ? '' : 's'} dissertativa${nPendCorrecao === 1 ? '' : 's'} aguardando correção`, tela: 'correcao' });
+    }
 
     const elPend = document.getElementById('ini-pendencias');
     elPend.innerHTML = pend.length
@@ -1595,6 +1641,152 @@
       if ([...sel.options].some(o => o.value === desejado)) sel.value = desejado;
     });
   }
+
+  // ── CORREÇÃO — avaliação das respostas dissertativas (pergunta tipo
+  //    "aberta"). Cada avaliação vira um doc em avaliacoes_abertas, com id
+  //    determinístico "{resultadoId}_{questaoIdx}" (upsert via setDoc,
+  //    nunca duplica). Coleção só de leitura/escrita do admin — colaborador
+  //    nunca acessa. ──
+  let avaliacoesAbertasCache = [];
+  let correcaoSelecionadoId  = null;
+
+  function itensAbertos() {
+    const itens = [];
+    resultadosCache.forEach(r => {
+      (r.perguntas || []).forEach((p, i) => {
+        if (p.tipo !== 'aberta') return;
+        const id   = r.id + '_' + i;
+        const aval = avaliacoesAbertasCache.find(a => a.id === id);
+        itens.push({
+          id, resultadoId: r.id, questaoIdx: i,
+          nome: r.nome, tituloProva: r.tituloProva, enviadoEm: r.enviadoEm,
+          enunciado: p.enunciado, resposta: p.resposta,
+          avaliacao: aval ? aval.avaliacao : null,
+          comentario: aval ? aval.comentario : ''
+        });
+      });
+    });
+    // Pendentes primeiro (mais antigas primeiro), já corrigidas depois.
+    return itens.sort((a, b) => {
+      if (!!a.avaliacao !== !!b.avaliacao) return a.avaliacao ? 1 : -1;
+      return (a.enviadoEm || '').localeCompare(b.enviadoEm || '');
+    });
+  }
+
+  const LABEL_AVALIACAO = { adequada: 'Adequada', parcial: 'Parcial', inadequada: 'Inadequada' };
+
+  function renderCorrecao() {
+    const itens = itensAbertos();
+    const pendentes = itens.filter(i => !i.avaliacao);
+
+    const badge = document.getElementById('badge-correcao');
+    if (badge) {
+      badge.style.display = pendentes.length ? 'inline-block' : 'none';
+      badge.textContent = pendentes.length;
+    }
+
+    if (correcaoSelecionadoId && !itens.some(i => i.id === correcaoSelecionadoId)) correcaoSelecionadoId = null;
+    if (!correcaoSelecionadoId && pendentes.length) correcaoSelecionadoId = pendentes[0].id;
+
+    const elFila = document.getElementById('correcao-fila');
+    elFila.innerHTML = `
+      <div class="painel-detalhe-header"><h3>Fila de correção</h3><div class="painel-detalhe-sub">${pendentes.length} pendente${pendentes.length === 1 ? '' : 's'} de ${itens.length}</div></div>
+      <div style="max-height:560px;overflow-y:auto;">
+        ${itens.length ? itens.map(i => `
+          <div class="correcao-item ${i.id === correcaoSelecionadoId ? 'selecionada' : ''}" onclick="window.selecionarItemCorrecao('${i.id}')">
+            <div>
+              <div class="correcao-item-nome">${escapeAttr(i.nome)}</div>
+              <div class="correcao-item-sub">${escapeAttr(i.tituloProva || 'Prova')}</div>
+            </div>
+            <span class="badge-avaliacao ${i.avaliacao || 'pendente'}">${i.avaliacao ? LABEL_AVALIACAO[i.avaliacao] : 'Pendente'}</span>
+          </div>`).join('') : '<div class="empty2">Nenhuma resposta dissertativa enviada ainda.</div>'}
+      </div>`;
+
+    const el = document.getElementById('correcao-workspace');
+    const item = itens.find(i => i.id === correcaoSelecionadoId);
+    if (!item) {
+      el.innerHTML = `<div class="painel-vazio">${itens.length ? 'Tudo corrigido por aqui! Selecione um item na fila pra revisar.' : 'Nenhuma resposta dissertativa pra corrigir ainda.'}</div>`;
+      return;
+    }
+    const data = item.enviadoEm ? new Date(item.enviadoEm).toLocaleString('pt-BR') : 'Data desconhecida';
+    el.innerHTML = `
+      <div class="card2-header">
+        <h2>${escapeAttr(item.nome)}</h2>
+        <span class="badge-avaliacao ${item.avaliacao || 'pendente'}">${item.avaliacao ? LABEL_AVALIACAO[item.avaliacao] : 'Pendente'}</span>
+      </div>
+      <div class="card2-body">
+        <div class="painel-detalhe-sub" style="margin-bottom:14px;">${escapeAttr(item.tituloProva || 'Prova')} · enviada em ${data}</div>
+        <div class="rp-enun" style="font-size:14px;margin-bottom:10px;">${escapeAttr(item.enunciado)}</div>
+        <div class="resposta-texto" style="margin-bottom:6px;">${escapeAttr(item.resposta || '(sem resposta)').replace(/\n/g, '<br>')}</div>
+
+        <div class="aval-opcoes">
+          <button type="button" class="aval-btn adequada ${item.avaliacao === 'adequada' ? 'ativa' : ''}" onclick="window.selecionarAvaliacao('adequada')">Adequada</button>
+          <button type="button" class="aval-btn parcial ${item.avaliacao === 'parcial' ? 'ativa' : ''}" onclick="window.selecionarAvaliacao('parcial')">Parcial</button>
+          <button type="button" class="aval-btn inadequada ${item.avaliacao === 'inadequada' ? 'ativa' : ''}" onclick="window.selecionarAvaliacao('inadequada')">Inadequada</button>
+        </div>
+        <textarea class="correcao-comentario" id="correcao-comentario-texto" placeholder="Comentário opcional...">${escapeAttr(item.comentario)}</textarea>
+
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="btn-secundario2" onclick="window.correcaoAnterior()">← Anterior</button>
+          <button class="btn-primario2" style="flex:1;" onclick="window.salvarCorrecao()">Salvar e ir para próxima →</button>
+        </div>
+      </div>`;
+    el.dataset.avaliacaoAtual = item.avaliacao || '';
+  }
+
+  window.selecionarItemCorrecao = function(id) {
+    correcaoSelecionadoId = id;
+    renderCorrecao();
+  };
+
+  window.selecionarAvaliacao = function(valor) {
+    const el = document.getElementById('correcao-workspace');
+    el.dataset.avaliacaoAtual = valor;
+    el.querySelectorAll('.aval-btn').forEach(b => b.classList.toggle('ativa', b.classList.contains(valor)));
+  };
+
+  window.correcaoAnterior = function() {
+    const itens = itensAbertos();
+    const idx = itens.findIndex(i => i.id === correcaoSelecionadoId);
+    if (idx > 0) { correcaoSelecionadoId = itens[idx - 1].id; renderCorrecao(); }
+  };
+
+  window.correcaoProxima = function() {
+    const itens = itensAbertos();
+    const idx = itens.findIndex(i => i.id === correcaoSelecionadoId);
+    if (idx !== -1 && idx < itens.length - 1) { correcaoSelecionadoId = itens[idx + 1].id; renderCorrecao(); }
+  };
+
+  window.salvarCorrecao = async function() {
+    const item = itensAbertos().find(i => i.id === correcaoSelecionadoId);
+    if (!item) return;
+    const avaliacao = document.getElementById('correcao-workspace').dataset.avaliacaoAtual || '';
+    if (!avaliacao) { alert('Selecione Adequada, Parcial ou Inadequada antes de salvar.'); return; }
+    const comentario = document.getElementById('correcao-comentario-texto').value.trim();
+
+    loading(true, 'Salvando avaliação...');
+    try {
+      const dados = {
+        resultadoId: item.resultadoId, questaoIdx: item.questaoIdx,
+        avaliacao, comentario,
+        avaliadoPor: usuarioEmail || '', avaliadoEm: new Date().toISOString()
+      };
+      await setDoc(doc(db, 'avaliacoes_abertas', item.id), dados);
+      const idx = avaliacoesAbertasCache.findIndex(a => a.id === item.id);
+      if (idx !== -1) avaliacoesAbertasCache[idx] = { id: item.id, ...dados };
+      else avaliacoesAbertasCache.push({ id: item.id, ...dados });
+
+      const itensAtualizados = itensAbertos();
+      const posAtual = itensAtualizados.findIndex(i => i.id === item.id);
+      const proximoPendente = itensAtualizados.find((i, idx2) => idx2 > posAtual && !i.avaliacao) || itensAtualizados.find(i => !i.avaliacao);
+      correcaoSelecionadoId = proximoPendente ? proximoPendente.id : item.id;
+      renderCorrecao();
+    } catch(e) {
+      console.error('[ACE Admin] Erro ao salvar avaliação:', e);
+      alert('Erro ao salvar a avaliação. Se isso persistir, confirme com o suporte se a regra do Firestore pra "avaliacoes_abertas" já foi aplicada.');
+    }
+    loading(false);
+  };
 
   // RESULTADOS
   let resultadosCache = [];
