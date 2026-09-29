@@ -798,15 +798,33 @@
     renderBuilderProva();
   };
 
+  // Ciclo (mês/ano) e status são campos novos em "provas" — a Fase 3 da
+  // reforma "Capacitação Interna v2". Provas já existentes, salvas antes
+  // dessa mudança, não têm esses campos: em vez de migrar o banco, o
+  // valor padrão é calculado aqui na leitura (nunca gravado de volta só
+  // por abrir pra editar) — status vira "publicada" (já estava em uso) e
+  // o ciclo vira o mês/ano atual do dispositivo.
+  function provaStatusEfetivo(p) { return p.status || 'publicada'; }
+  function cicloAtual() { const d = new Date(); return { mes: d.getMonth() + 1, ano: d.getFullYear() }; }
+
   window.iniciarNovaProva = function() {
-    provaEmEdicao = { id: null, titulo: '', perguntas: [novaPerguntaVazia()] };
+    const c = cicloAtual();
+    provaEmEdicao = { id: null, titulo: '', dono: '', status: 'rascunho', cicloMes: c.mes, cicloAno: c.ano, perguntas: [novaPerguntaVazia()] };
     renderBuilderProva();
   };
 
   window.editarProva = function(id) {
     const p = provasCache.find(p => p.id === id);
     if (!p) return;
-    provaEmEdicao = { id: p.id, titulo: p.titulo, perguntas: JSON.parse(JSON.stringify(p.perguntas)) };
+    const c = cicloAtual();
+    provaEmEdicao = {
+      id: p.id, titulo: p.titulo,
+      dono: p.dono || '',
+      status: provaStatusEfetivo(p),
+      cicloMes: p.cicloMes || c.mes,
+      cicloAno: p.cicloAno || c.ano,
+      perguntas: JSON.parse(JSON.stringify(p.perguntas))
+    };
     renderBuilderProva();
   };
 
@@ -861,7 +879,8 @@
     }
     // Cai no builder normal pra revisar/editar antes de salvar — nada é
     // gravado no Firestore só por ter sido importado.
-    provaEmEdicao = { id: null, titulo: String(dados.titulo), perguntas: perguntasValidadas };
+    const c = cicloAtual();
+    provaEmEdicao = { id: null, titulo: String(dados.titulo), dono: '', status: 'rascunho', cicloMes: c.mes, cicloAno: c.ano, perguntas: perguntasValidadas };
     renderBuilderProva();
   };
 
@@ -873,6 +892,14 @@
     if (!provaEmEdicao) return;
     const tituloEl = document.getElementById('prova-titulo');
     if (tituloEl) provaEmEdicao.titulo = tituloEl.value;
+    const donoEl = document.getElementById('prova-dono');
+    if (donoEl) provaEmEdicao.dono = donoEl.value;
+    const statusEl = document.getElementById('prova-status');
+    if (statusEl) provaEmEdicao.status = statusEl.value;
+    const mesEl = document.getElementById('prova-ciclo-mes');
+    if (mesEl) provaEmEdicao.cicloMes = parseInt(mesEl.value, 10);
+    const anoEl = document.getElementById('prova-ciclo-ano');
+    if (anoEl && anoEl.value) provaEmEdicao.cicloAno = parseInt(anoEl.value, 10);
     document.querySelectorAll('.pergunta-builder').forEach((pEl, i) => {
       const enEl = pEl.querySelector('.input-enunciado');
       if (enEl) provaEmEdicao.perguntas[i].enunciado = enEl.value;
@@ -922,6 +949,20 @@
     }
     el.innerHTML = `
       <input type="text" id="prova-titulo" placeholder="Título da prova (ex.: Avaliação Excel — Set/2026)" value="${escapeAttr(provaEmEdicao.titulo)}">
+      <div class="add-row-fields">
+        <input type="text" id="prova-dono" placeholder="Responsável pela prova (ex.: Pietra)" value="${escapeAttr(provaEmEdicao.dono)}">
+      </div>
+      <div class="add-row-fields">
+        <select id="prova-status">
+          <option value="rascunho" ${provaEmEdicao.status === 'rascunho' ? 'selected' : ''}>Rascunho</option>
+          <option value="publicada" ${provaEmEdicao.status === 'publicada' ? 'selected' : ''}>Publicada</option>
+          <option value="encerrada" ${provaEmEdicao.status === 'encerrada' ? 'selected' : ''}>Encerrada</option>
+        </select>
+        <select id="prova-ciclo-mes">
+          ${NOMES_MESES.map((m, i) => `<option value="${i + 1}" ${provaEmEdicao.cicloMes === i + 1 ? 'selected' : ''}>${m}</option>`).join('')}
+        </select>
+        <input type="number" id="prova-ciclo-ano" value="${provaEmEdicao.cicloAno}" style="max-width:100px;">
+      </div>
       ${provaEmEdicao.perguntas.map((p, i) => `
         <div class="pergunta-builder">
           <div class="pergunta-builder-header">
@@ -966,8 +1007,13 @@
     }
     loading(true, 'Salvando prova...');
     try {
+      const c = cicloAtual();
       const dados = {
         titulo,
+        dono: (provaEmEdicao.dono || '').trim(),
+        status: provaEmEdicao.status || 'rascunho',
+        cicloMes: Number.isInteger(provaEmEdicao.cicloMes) ? provaEmEdicao.cicloMes : c.mes,
+        cicloAno: Number.isInteger(provaEmEdicao.cicloAno) && provaEmEdicao.cicloAno > 2000 ? provaEmEdicao.cicloAno : c.ano,
         perguntas: provaEmEdicao.perguntas.map(p => {
           if (p.tipo === 'aberta') return { tipo: 'aberta', enunciado: p.enunciado.trim() };
           return {
@@ -981,6 +1027,7 @@
       if (provaEmEdicao.id) await setDoc(doc(db, 'provas', provaEmEdicao.id), dados);
       else                  await addDoc(collection(db, 'provas'), dados);
       provaEmEdicao = null;
+      renderBuilderProva(); // sem isso, o formulário ficava com os dados salvos até a próxima interação
       await carregarDados();
     } catch(e) {
       alert('Erro ao salvar prova.');
@@ -1050,12 +1097,14 @@
     if (!lista.length) {
       el.innerHTML = '<div class="empty-state"><div class="es-icon">📝</div>Nenhuma prova criada ainda.</div>';
     } else {
-      el.innerHTML = lista.map(p => `
+      el.innerHTML = lista.map(p => {
+        const statusLabel = { rascunho: 'Rascunho', publicada: 'Publicada', encerrada: 'Encerrada' }[provaStatusEfetivo(p)];
+        return `
         <div class="list-item">
           <div class="item-info">
             <div>
               <div class="item-name">${p.titulo}</div>
-              <div class="item-sub">${p.perguntas.length} pergunta${p.perguntas.length === 1 ? '' : 's'}</div>
+              <div class="item-sub">${p.perguntas.length} pergunta${p.perguntas.length === 1 ? '' : 's'}${p.dono ? ' · ' + escapeAttr(p.dono) : ''} · ${statusLabel}</div>
             </div>
           </div>
           <div style="display:flex;gap:6px;">
@@ -1063,7 +1112,8 @@
             <button class="btn-edit" onclick="window.editarProva('${p.id}')">✎ Editar</button>
             <button class="btn-remove" onclick="window.removerProva('${p.id}', '${p.titulo.replace(/'/g,"\\'")}')">Remover</button>
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     }
     // Popula todo <select class="select-prova"> da página (adicionar
     // colaborador + cada linha de edição), preservando a prova já
