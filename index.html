@@ -786,6 +786,9 @@
             <h1>Correção</h1>
             <p>Avalie as respostas dissertativas enviadas pelos colaboradores — o resultado aparece no relatório individual.</p>
           </div>
+          <div class="tela-header-acoes">
+            <button class="btn-secundario2" id="btn-avaliar-todas-ia" onclick="window.avaliarTodasComIA()">✨ Avaliar pendentes com IA</button>
+          </div>
         </div>
         <div class="provas-layout">
           <div class="card2" id="correcao-workspace" style="margin-bottom:0;"></div>
@@ -905,6 +908,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, collection, doc, getDocs, setDoc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDHKonTFEuT09ZqmM6ovrt_l3Uwij9n1Ts",
@@ -915,9 +919,10 @@
     appId: "1:26614328762:web:ccd355acc24ad17c2d4183"
   };
 
-  const app  = initializeApp(firebaseConfig);
-  const db   = getFirestore(app);
-  const auth = getAuth(app);
+  const app       = initializeApp(firebaseConfig);
+  const db        = getFirestore(app);
+  const auth      = getAuth(app);
+  const functions = getFunctions(app);
 
 
   function loading(show, msg) {
@@ -2070,7 +2075,8 @@
           nome: r.nome, tituloProva: r.tituloProva, enviadoEm: r.enviadoEm,
           enunciado: p.enunciado, resposta: p.resposta,
           avaliacao: aval ? aval.avaliacao : null,
-          comentario: aval ? aval.comentario : ''
+          comentario: aval ? aval.comentario : '',
+          avaliadoPor: aval ? aval.avaliadoPor : null
         });
       });
     });
@@ -2120,12 +2126,17 @@
     el.innerHTML = `
       <div class="card2-header">
         <h2>${escapeAttr(item.nome)}</h2>
-        <span class="badge-avaliacao ${item.avaliacao || 'pendente'}">${item.avaliacao ? LABEL_AVALIACAO[item.avaliacao] : 'Pendente'}</span>
+        <span style="display:flex;align-items:center;gap:8px;">
+          ${item.avaliadoPor === 'IA (Claude)' ? '<span class="badge-status publicada" title="Avaliado automaticamente pela IA — revise se quiser">✨ IA</span>' : ''}
+          <span class="badge-avaliacao ${item.avaliacao || 'pendente'}">${item.avaliacao ? LABEL_AVALIACAO[item.avaliacao] : 'Pendente'}</span>
+        </span>
       </div>
       <div class="card2-body">
         <div class="painel-detalhe-sub" style="margin-bottom:14px;">${escapeAttr(item.tituloProva || 'Prova')} · enviada em ${data}</div>
         <div class="rp-enun" style="font-size:14px;margin-bottom:10px;">${escapeAttr(item.enunciado)}</div>
         <div class="resposta-texto" style="margin-bottom:6px;">${escapeAttr(item.resposta || '(sem resposta)').replace(/\n/g, '<br>')}</div>
+
+        <button type="button" class="btn-secundario2" id="btn-avaliar-item-ia" style="margin-bottom:14px;" onclick="window.avaliarItemComIA('${item.id}')">✨ Avaliar esta resposta com IA</button>
 
         <div class="aval-opcoes">
           <button type="button" class="aval-btn adequada ${item.avaliacao === 'adequada' ? 'ativa' : ''}" onclick="window.selecionarAvaliacao('adequada')">Adequada</button>
@@ -2193,6 +2204,61 @@
     } catch(e) {
       console.error('[ACE Admin] Erro ao salvar avaliação:', e);
       alert('Erro ao salvar a avaliação. Se isso persistir, confirme com o suporte se a regra do Firestore pra "avaliacoes_abertas" já foi aplicada.');
+    }
+    loading(false);
+  };
+
+  // ── Avaliação automática por IA (Cloud Function "avaliarRespostasAbertas",
+  // ver pasta functions/) — não é nota, é uma leitura qualitativa pra
+  // gestão. A IA grava direto em avaliacoes_abertas com avaliadoPor="IA
+  // (Claude)"; o RH pode sempre revisar/sobrescrever normalmente depois,
+  // pelos botões Adequada/Parcial/Inadequada de sempre. ──
+  async function chamarAvaliacaoIA(itens) {
+    const fn = httpsCallable(functions, 'avaliarRespostasAbertas');
+    const payload = itens.map(i => ({ resultadoId: i.resultadoId, questaoIdx: i.questaoIdx, enunciado: i.enunciado, resposta: i.resposta }));
+    const resp = await fn({ itens: payload });
+    const resultados = (resp.data && resp.data.resultados) || [];
+    resultados.filter(r => r.ok).forEach(r => {
+      const idx = avaliacoesAbertasCache.findIndex(a => a.id === r.docId);
+      const dados = { id: r.docId, resultadoId: r.resultadoId, questaoIdx: r.questaoIdx, avaliacao: r.avaliacao, comentario: r.comentario, avaliadoPor: r.avaliadoPor, avaliadoEm: r.avaliadoEm };
+      if (idx !== -1) avaliacoesAbertasCache[idx] = dados;
+      else avaliacoesAbertasCache.push(dados);
+    });
+    return resultados;
+  }
+
+  window.avaliarItemComIA = async function(id) {
+    const item = itensAbertos().find(i => i.id === id);
+    if (!item) return;
+    loading(true, 'Avaliando com IA...');
+    try {
+      const resultados = await chamarAvaliacaoIA([item]);
+      if (resultados[0] && !resultados[0].ok) throw new Error(resultados[0].erro || 'falha na IA');
+      renderCorrecao();
+      renderResultados(resultadosCache);
+      renderInicio();
+    } catch(e) {
+      console.error('[ACE Admin] Erro ao avaliar com IA:', e);
+      alert('Não foi possível avaliar essa resposta com IA agora. Avalie manualmente ou tente de novo em instantes.');
+    }
+    loading(false);
+  };
+
+  window.avaliarTodasComIA = async function() {
+    const pendentes = itensAbertos().filter(i => !i.avaliacao);
+    if (!pendentes.length) { alert('Não há respostas dissertativas pendentes de correção.'); return; }
+    if (!confirm(`Avaliar ${pendentes.length} resposta${pendentes.length === 1 ? '' : 's'} pendente${pendentes.length === 1 ? '' : 's'} com IA agora? Isso não é uma nota — é uma leitura qualitativa pra gestão, e você pode revisar/ajustar qualquer uma depois.`)) return;
+    loading(true, `Avaliando ${pendentes.length} resposta(s) com IA...`);
+    try {
+      const resultados = await chamarAvaliacaoIA(pendentes);
+      const falhas = resultados.filter(r => !r.ok);
+      renderCorrecao();
+      renderResultados(resultadosCache);
+      renderInicio();
+      if (falhas.length) alert(`${falhas.length} de ${pendentes.length} resposta(s) não puderam ser avaliadas pela IA (${falhas.map(f => f.erro).slice(0,3).join('; ')}). Avalie essas manualmente.`);
+    } catch(e) {
+      console.error('[ACE Admin] Erro ao avaliar em lote com IA:', e);
+      alert('Não foi possível chamar a IA agora. Confirme se a função "avaliarRespostasAbertas" já foi implantada (deploy) e tente de novo.');
     }
     loading(false);
   };
