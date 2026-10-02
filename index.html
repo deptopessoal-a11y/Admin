@@ -787,6 +787,7 @@
             <p>Avalie as respostas dissertativas enviadas pelos colaboradores — o resultado aparece no relatório individual.</p>
           </div>
           <div class="tela-header-acoes">
+            <button class="btn-secundario2" title="Configurar a chave gratuita da API Gemini" onclick="window.configurarChaveGemini()">⚙️ IA</button>
             <button class="btn-secundario2" id="btn-avaliar-todas-ia" onclick="window.avaliarTodasComIA()">✨ Avaliar pendentes com IA</button>
           </div>
         </div>
@@ -908,7 +909,6 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, collection, doc, getDocs, setDoc, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDHKonTFEuT09ZqmM6ovrt_l3Uwij9n1Ts",
@@ -919,10 +919,9 @@
     appId: "1:26614328762:web:ccd355acc24ad17c2d4183"
   };
 
-  const app       = initializeApp(firebaseConfig);
-  const db        = getFirestore(app);
-  const auth      = getAuth(app);
-  const functions = getFunctions(app);
+  const app  = initializeApp(firebaseConfig);
+  const db   = getFirestore(app);
+  const auth = getAuth(app);
 
 
   function loading(show, msg) {
@@ -2127,7 +2126,7 @@
       <div class="card2-header">
         <h2>${escapeAttr(item.nome)}</h2>
         <span style="display:flex;align-items:center;gap:8px;">
-          ${item.avaliadoPor === 'IA (Claude)' ? '<span class="badge-status publicada" title="Avaliado automaticamente pela IA — revise se quiser">✨ IA</span>' : ''}
+          ${item.avaliadoPor === AVALIADO_POR_IA ? '<span class="badge-status publicada" title="Avaliado automaticamente pela IA — revise se quiser">✨ IA</span>' : ''}
           <span class="badge-avaliacao ${item.avaliacao || 'pendente'}">${item.avaliacao ? LABEL_AVALIACAO[item.avaliacao] : 'Pendente'}</span>
         </span>
       </div>
@@ -2208,22 +2207,108 @@
     loading(false);
   };
 
-  // ── Avaliação automática por IA (Cloud Function "avaliarRespostasAbertas",
-  // ver pasta functions/) — não é nota, é uma leitura qualitativa pra
-  // gestão. A IA grava direto em avaliacoes_abertas com avaliadoPor="IA
-  // (Claude)"; o RH pode sempre revisar/sobrescrever normalmente depois,
-  // pelos botões Adequada/Parcial/Inadequada de sempre. ──
+  // ── Avaliação automática por IA — direto do navegador, com a API
+  // gratuita do Gemini (sem Cloud Function, sem plano pago, sem cartão).
+  // Não é nota, é uma leitura qualitativa pra gestão. A IA grava direto em
+  // avaliacoes_abertas com avaliadoPor="IA (Gemini)"; o RH pode sempre
+  // revisar/sobrescrever normalmente depois, pelos botões
+  // Adequada/Parcial/Inadequada de sempre.
+  //
+  // A chave é gratuita (sem cartão, sem conta de faturamento): gere a sua
+  // em https://aistudio.google.com/apikey e cole quando o painel pedir —
+  // ela fica salva só no navegador (localStorage), nunca no código-fonte.
+  const GEMINI_MODEL = 'gemini-2.5-flash';
+  const AVALIADO_POR_IA = 'IA (Gemini)';
+  const CHAVE_GEMINI_STORAGE = 'gemini_api_key';
+
+  const PROMPT_SISTEMA_IA = `Você é um analista de RH avaliando, de forma qualitativa, a resposta de um
+colaborador a uma pergunta dissertativa de uma avaliação interna de
+conhecimento (parte de um programa de capacitação). Isso NÃO é uma nota —
+é uma leitura de gestão sobre o nível de compreensão do colaborador,
+pensada pra apoiar o gestor da área a identificar pontos fortes e lacunas
+de conhecimento na equipe.
+
+Classifique a resposta em uma das três categorias:
+- "adequada": a resposta demonstra entendimento correto e completo do conceito perguntado.
+- "parcial": a resposta está no caminho certo, mas tem lacunas, imprecisões ou está incompleta.
+- "inadequada": a resposta está incorreta, muito vaga, em branco, ou não demonstra entendimento do tema.
+
+Escreva um comentário de 2 a 3 frases, direto e objetivo, explicando o
+porquê da classificação — o que a resposta acertou e/ou o que faltou.
+Escreva para um gestor não-técnico entender rápido, sem jargão. Nunca
+invente informação que não esteja na resposta do colaborador.
+
+Responda SOMENTE com o JSON pedido, sem texto fora dele.`;
+
+  function obterChaveGemini() {
+    return (localStorage.getItem(CHAVE_GEMINI_STORAGE) || '').trim();
+  }
+
+  window.configurarChaveGemini = function() {
+    const atual = obterChaveGemini();
+    const nova = window.prompt('Cole sua chave da API Gemini (gratuita — gere a sua, sem cartão, em https://aistudio.google.com/apikey):', atual);
+    if (nova === null) return obterChaveGemini();
+    localStorage.setItem(CHAVE_GEMINI_STORAGE, nova.trim());
+    return obterChaveGemini();
+  };
+
+  async function avaliarComGemini(chave, enunciado, resposta) {
+    const respostaTexto = resposta && String(resposta).trim() ? String(resposta).trim() : '(sem resposta / em branco)';
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(chave)}`;
+    const corpo = {
+      systemInstruction: { parts: [{ text: PROMPT_SISTEMA_IA }] },
+      contents: [{ role: 'user', parts: [{ text: `Pergunta: ${enunciado}\n\nResposta do colaborador: ${respostaTexto}` }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'OBJECT',
+          properties: {
+            avaliacao: { type: 'STRING', enum: ['adequada', 'parcial', 'inadequada'] },
+            comentario: { type: 'STRING' }
+          },
+          required: ['avaliacao', 'comentario']
+        }
+      }
+    };
+    const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+    if (!resp.ok) {
+      const erroTexto = await resp.text().catch(() => '');
+      throw new Error(`Gemini respondeu ${resp.status}${erroTexto ? ': ' + erroTexto.slice(0, 200) : ''}`);
+    }
+    const dadosResp = await resp.json();
+    const textoResposta = dadosResp && dadosResp.candidates && dadosResp.candidates[0] && dadosResp.candidates[0].content && dadosResp.candidates[0].content.parts && dadosResp.candidates[0].content.parts[0] && dadosResp.candidates[0].content.parts[0].text;
+    if (!textoResposta) throw new Error('A IA não retornou uma avaliação.');
+    let json;
+    try { json = JSON.parse(textoResposta); } catch (e) { throw new Error('A IA retornou um formato inesperado.'); }
+    if (!['adequada', 'parcial', 'inadequada'].includes(json.avaliacao)) throw new Error('Avaliação inválida retornada pela IA: ' + json.avaliacao);
+    return { avaliacao: json.avaliacao, comentario: String(json.comentario || '').trim().slice(0, 600) };
+  }
+
   async function chamarAvaliacaoIA(itens) {
-    const fn = httpsCallable(functions, 'avaliarRespostasAbertas');
-    const payload = itens.map(i => ({ resultadoId: i.resultadoId, questaoIdx: i.questaoIdx, enunciado: i.enunciado, resposta: i.resposta }));
-    const resp = await fn({ itens: payload });
-    const resultados = (resp.data && resp.data.resultados) || [];
-    resultados.filter(r => r.ok).forEach(r => {
-      const idx = avaliacoesAbertasCache.findIndex(a => a.id === r.docId);
-      const dados = { id: r.docId, resultadoId: r.resultadoId, questaoIdx: r.questaoIdx, avaliacao: r.avaliacao, comentario: r.comentario, avaliadoPor: r.avaliadoPor, avaliadoEm: r.avaliadoEm };
-      if (idx !== -1) avaliacoesAbertasCache[idx] = dados;
-      else avaliacoesAbertasCache.push(dados);
-    });
+    let chave = obterChaveGemini();
+    if (!chave) chave = window.configurarChaveGemini();
+    if (!chave) throw new Error('É preciso informar a chave da API Gemini pra usar a avaliação automática.');
+
+    const resultados = [];
+    for (const item of itens) {
+      const docId = `${item.resultadoId}_${item.questaoIdx}`;
+      try {
+        const avaliacao = await avaliarComGemini(chave, item.enunciado, item.resposta);
+        const dados = {
+          resultadoId: item.resultadoId, questaoIdx: item.questaoIdx,
+          avaliacao: avaliacao.avaliacao, comentario: avaliacao.comentario,
+          avaliadoPor: AVALIADO_POR_IA, avaliadoEm: new Date().toISOString()
+        };
+        await setDoc(doc(db, 'avaliacoes_abertas', docId), dados);
+        const idx = avaliacoesAbertasCache.findIndex(a => a.id === docId);
+        if (idx !== -1) avaliacoesAbertasCache[idx] = { id: docId, ...dados };
+        else avaliacoesAbertasCache.push({ id: docId, ...dados });
+        resultados.push({ docId, ok: true, ...dados });
+      } catch (e) {
+        console.error('[ACE Admin] Erro ao avaliar item com IA:', docId, e);
+        resultados.push({ docId, ok: false, erro: String((e && e.message) || e) });
+      }
+    }
     return resultados;
   }
 
@@ -2239,7 +2324,7 @@
       renderInicio();
     } catch(e) {
       console.error('[ACE Admin] Erro ao avaliar com IA:', e);
-      alert('Não foi possível avaliar essa resposta com IA agora. Avalie manualmente ou tente de novo em instantes.');
+      alert('Não foi possível avaliar essa resposta com IA agora (' + ((e && e.message) || e) + '). Avalie manualmente ou tente de novo em instantes.');
     }
     loading(false);
   };
@@ -2258,7 +2343,7 @@
       if (falhas.length) alert(`${falhas.length} de ${pendentes.length} resposta(s) não puderam ser avaliadas pela IA (${falhas.map(f => f.erro).slice(0,3).join('; ')}). Avalie essas manualmente.`);
     } catch(e) {
       console.error('[ACE Admin] Erro ao avaliar em lote com IA:', e);
-      alert('Não foi possível chamar a IA agora. Confirme se a função "avaliarRespostasAbertas" já foi implantada (deploy) e tente de novo.');
+      alert('Não foi possível chamar a IA agora (' + ((e && e.message) || e) + ').');
     }
     loading(false);
   };
