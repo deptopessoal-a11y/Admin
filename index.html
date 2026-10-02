@@ -2217,7 +2217,11 @@
   // A chave é gratuita (sem cartão, sem conta de faturamento): gere a sua
   // em https://aistudio.google.com/apikey e cole quando o painel pedir —
   // ela fica salva só no navegador (localStorage), nunca no código-fonte.
-  const GEMINI_MODEL = 'gemini-2.5-flash';
+  // Usa o alias "-latest" (em vez de fixar uma versão como "gemini-2.5-flash")
+  // pra não quebrar de novo quando o Google aposentar o modelo atual — o
+  // Google troca o alias por conta própria e avisa por e-mail com 2 semanas
+  // de antecedência quando isso vai acontecer.
+  const GEMINI_MODEL = 'gemini-flash-latest';
   const AVALIADO_POR_IA = 'IA (Gemini)';
   const CHAVE_GEMINI_STORAGE = 'gemini_api_key';
 
