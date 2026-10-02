@@ -2256,6 +2256,23 @@ Responda SOMENTE com o JSON pedido, sem texto fora dele.`;
     return obterChaveGemini();
   };
 
+  // O nível gratuito do Gemini responde 503 "high demand" / 429 de vez em
+  // quando, principalmente em horário de pico — é temporário do lado do
+  // Google. Tenta de novo (com uma pausa curta) antes de desistir.
+  async function buscarGeminiComRetentativa(url, corpo) {
+    const MAX_TENTATIVAS = 3;
+    for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+      const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
+      if (resp.ok) return resp;
+      const sobrecarregado = resp.status === 503 || resp.status === 429;
+      if (!sobrecarregado || tentativa === MAX_TENTATIVAS) {
+        const erroTexto = await resp.text().catch(() => '');
+        throw new Error(`Gemini respondeu ${resp.status}${erroTexto ? ': ' + erroTexto.slice(0, 200) : ''}`);
+      }
+      await new Promise(r => setTimeout(r, 1500 * tentativa));
+    }
+  }
+
   async function avaliarComGemini(chave, enunciado, resposta) {
     const respostaTexto = resposta && String(resposta).trim() ? String(resposta).trim() : '(sem resposta / em branco)';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(chave)}`;
@@ -2274,11 +2291,7 @@ Responda SOMENTE com o JSON pedido, sem texto fora dele.`;
         }
       }
     };
-    const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
-    if (!resp.ok) {
-      const erroTexto = await resp.text().catch(() => '');
-      throw new Error(`Gemini respondeu ${resp.status}${erroTexto ? ': ' + erroTexto.slice(0, 200) : ''}`);
-    }
+    const resp = await buscarGeminiComRetentativa(url, corpo);
     const dadosResp = await resp.json();
     const textoResposta = dadosResp && dadosResp.candidates && dadosResp.candidates[0] && dadosResp.candidates[0].content && dadosResp.candidates[0].content.parts && dadosResp.candidates[0].content.parts[0] && dadosResp.candidates[0].content.parts[0].text;
     if (!textoResposta) throw new Error('A IA não retornou uma avaliação.');
