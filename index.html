@@ -2225,11 +2225,16 @@
   // A chave é gratuita (sem cartão, sem conta de faturamento): gere a sua
   // em https://aistudio.google.com/apikey e cole quando o painel pedir —
   // ela fica salva só no navegador (localStorage), nunca no código-fonte.
-  // Usa o alias "-latest" (em vez de fixar uma versão como "gemini-2.5-flash")
-  // pra não quebrar de novo quando o Google aposentar o modelo atual — o
-  // Google troca o alias por conta própria e avisa por e-mail com 2 semanas
-  // de antecedência quando isso vai acontecer.
-  const GEMINI_MODEL = 'gemini-flash-latest';
+  // Usa o Flash-Lite como modelo principal — é a variante do Gemini feita
+  // pra alto volume, com cota gratuita bem mais folgada que a do Flash
+  // normal, então trava bem menos em "alta demanda" (erro 503). O Flash
+  // normal fica como plano B automático (gerarTextoRelatorioIA tenta os
+  // dois, nessa ordem) pros dias em que até o Flash-Lite estiver cheio.
+  // Evitamos fixar uma versão exata (tipo "gemini-2.5-flash") porque o
+  // Google aposenta essas de vez em quando — os aliases "-latest" o
+  // Google troca por conta própria, avisando por e-mail com 2 semanas de
+  // antecedência quando vai quebrar algo.
+  const GEMINI_MODELOS = ['gemini-flash-lite-latest', 'gemini-flash-latest'];
   const CHAVE_GEMINI_STORAGE = 'gemini_api_key';
 
   const PROMPT_SISTEMA_RELATORIO_IA = `Você é um analista de RH preparando um relatório interno e confidencial
@@ -2276,7 +2281,9 @@ Responda SOMENTE com o JSON pedido, sem texto fora dele.`;
 
   // O nível gratuito do Gemini responde 503 "high demand" / 429 de vez em
   // quando, principalmente em horário de pico — é temporário do lado do
-  // Google. Tenta de novo (com uma pausa curta) antes de desistir.
+  // Google. Tenta de novo (com uma pausa curta) antes de desistir; marca
+  // o status HTTP no erro pra quem chamou decidir se vale tentar outro
+  // modelo (sobrecarga) ou desistir na hora (erro de verdade, tipo chave inválida).
   async function buscarGeminiComRetentativa(url, corpo) {
     const MAX_TENTATIVAS = 3;
     for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
@@ -2285,19 +2292,23 @@ Responda SOMENTE com o JSON pedido, sem texto fora dele.`;
       const sobrecarregado = resp.status === 503 || resp.status === 429;
       if (!sobrecarregado || tentativa === MAX_TENTATIVAS) {
         const erroTexto = await resp.text().catch(() => '');
-        throw new Error(`Gemini respondeu ${resp.status}${erroTexto ? ': ' + erroTexto.slice(0, 200) : ''}`);
+        const erro = new Error(`Gemini respondeu ${resp.status}${erroTexto ? ': ' + erroTexto.slice(0, 200) : ''}`);
+        erro.status = resp.status;
+        throw erro;
       }
       await new Promise(r => setTimeout(r, 1500 * tentativa));
     }
   }
 
   // Pergunta à IA, de uma vez só, sobre TODAS as dissertativas de um
-  // resultado (pessoa + prova) — não uma pergunta isolada por vez.
+  // resultado (pessoa + prova) — não uma pergunta isolada por vez. Tenta
+  // os modelos de GEMINI_MODELOS em ordem: só passa pro próximo se o
+  // atual esgotar as retentativas por SOBRECARGA (503/429) — qualquer
+  // outro erro (chave inválida, etc.) desiste na hora, sem trocar de modelo.
   async function gerarTextoRelatorioIA(chave, nome, tituloProva, perguntasAbertas) {
     const blocoPerguntas = perguntasAbertas.map((p, i) =>
       `Pergunta ${i + 1}: ${p.enunciado}\nResposta do colaborador: ${p.resposta && String(p.resposta).trim() ? String(p.resposta).trim() : '(sem resposta / em branco)'}`
     ).join('\n\n');
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(chave)}`;
     const corpo = {
       systemInstruction: { parts: [{ text: PROMPT_SISTEMA_RELATORIO_IA }] },
       contents: [{ role: 'user', parts: [{ text: `Colaborador: ${nome}\nProva: ${tituloProva}\n\n${blocoPerguntas}` }] }],
@@ -2315,18 +2326,30 @@ Responda SOMENTE com o JSON pedido, sem texto fora dele.`;
         }
       }
     };
-    const resp = await buscarGeminiComRetentativa(url, corpo);
-    const dadosResp = await resp.json();
-    const textoResposta = dadosResp && dadosResp.candidates && dadosResp.candidates[0] && dadosResp.candidates[0].content && dadosResp.candidates[0].content.parts && dadosResp.candidates[0].content.parts[0] && dadosResp.candidates[0].content.parts[0].text;
-    if (!textoResposta) throw new Error('A IA não retornou um relatório.');
-    let json;
-    try { json = JSON.parse(textoResposta); } catch (e) { throw new Error('A IA retornou um formato inesperado.'); }
-    return {
-      resumoGeral: String(json.resumoGeral || '').trim(),
-      pontosFortes: String(json.pontosFortes || '').trim(),
-      pontosAtencao: String(json.pontosAtencao || '').trim(),
-      recomendacao: String(json.recomendacao || '').trim()
-    };
+
+    let ultimoErro;
+    for (const modelo of GEMINI_MODELOS) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${encodeURIComponent(chave)}`;
+      try {
+        const resp = await buscarGeminiComRetentativa(url, corpo);
+        const dadosResp = await resp.json();
+        const textoResposta = dadosResp && dadosResp.candidates && dadosResp.candidates[0] && dadosResp.candidates[0].content && dadosResp.candidates[0].content.parts && dadosResp.candidates[0].content.parts[0] && dadosResp.candidates[0].content.parts[0].text;
+        if (!textoResposta) throw new Error('A IA não retornou um relatório.');
+        let json;
+        try { json = JSON.parse(textoResposta); } catch (e) { throw new Error('A IA retornou um formato inesperado.'); }
+        return {
+          resumoGeral: String(json.resumoGeral || '').trim(),
+          pontosFortes: String(json.pontosFortes || '').trim(),
+          pontosAtencao: String(json.pontosAtencao || '').trim(),
+          recomendacao: String(json.recomendacao || '').trim()
+        };
+      } catch (e) {
+        ultimoErro = e;
+        if (!(e && (e.status === 503 || e.status === 429))) throw e;
+        console.warn('[ACE Admin] Modelo', modelo, 'sobrecarregado, tentando o próximo da lista...');
+      }
+    }
+    throw ultimoErro;
   }
 
   // RESULTADOS
