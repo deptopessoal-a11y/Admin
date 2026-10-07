@@ -404,7 +404,6 @@
     .relatorio-topbar button.principal { background:#fff; color:var(--ink); border:none; }
     .relatorio-doc { max-width:900px; margin:24px auto 60px; background:#fff; color:#1a1a2e; font-family:'Lexend',sans-serif; border-radius:6px; overflow:hidden; box-shadow:0 12px 48px rgba(0,0,0,0.25); }
 
-    .rel-ia-banner { background:var(--erro); color:#fff; font-family:'Archivo',sans-serif; font-stretch:125%; font-weight:800; font-size:12px; letter-spacing:1px; text-align:center; padding:10px 16px; }
     .rel-capa { background:linear-gradient(160deg,#1B1C39 0%,#0A0A18 100%); color:#fff; padding:60px 56px 44px; }
     .rel-capa img.logo { height:26px; margin-bottom:20px; }
     .rel-tag { font-family:'Archivo',sans-serif; font-stretch:125%; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:#9AA3D6; margin-bottom:4px; }
@@ -802,9 +801,6 @@
             <h1>Resultados</h1>
             <p>Todos os envios já corrigidos, com o detalhe questão a questão de cada prova.</p>
           </div>
-          <div class="tela-header-acoes">
-            <button class="btn-secundario2" title="Configurar a chave gratuita da API Gemini" onclick="window.configurarChaveGemini()">⚙️ IA</button>
-          </div>
         </div>
         <div class="panel-card">
           <div class="panel-card-header">
@@ -1099,18 +1095,6 @@
       } catch(e) {
         console.error('[ACE Admin] Erro ao carregar avaliações abertas:', e);
         avaliacoesAbertasCache = [];
-      }
-
-      // "relatorios_ia" é coleção nova (relatório interno de IA pra
-      // diretoria) — mesmo tratamento: se a regra ainda não foi aplicada,
-      // só essa funcionalidade fica indisponível, o resto do painel segue.
-      try {
-        const snapRelatoriosIA = await getDocs(collection(db, 'relatorios_ia'));
-        relatoriosIACache = [];
-        snapRelatoriosIA.forEach(d => relatoriosIACache.push({ id: d.id, ...d.data() }));
-      } catch(e) {
-        console.error('[ACE Admin] Erro ao carregar relatórios de IA:', e);
-        relatoriosIACache = [];
       }
 
       renderProvas(provasCache);
@@ -2214,147 +2198,8 @@
     loading(false);
   };
 
-  // ── Relatório interno de IA (uso exclusivo RH/diretoria) — direto do
-  // navegador, com a API gratuita do Gemini (sem Cloud Function, sem
-  // plano pago, sem cartão). Não é nota: é uma análise qualitativa de
-  // TODAS as respostas dissertativas da pessoa numa prova, em conjunto —
-  // pensada pra apoiar a diretoria. Fica numa coleção própria
-  // (relatorios_ia), separada do relatório que vai pro colaborador — o
-  // colaborador nunca deve ter acesso a este relatório.
-  //
-  // A chave é gratuita (sem cartão, sem conta de faturamento): gere a sua
-  // em https://aistudio.google.com/apikey e cole quando o painel pedir —
-  // ela fica salva só no navegador (localStorage), nunca no código-fonte.
-  // Usa o Flash-Lite como modelo principal — é a variante do Gemini feita
-  // pra alto volume, com cota gratuita bem mais folgada que a do Flash
-  // normal, então trava bem menos em "alta demanda" (erro 503). O Flash
-  // normal fica como plano B automático (gerarTextoRelatorioIA tenta os
-  // dois, nessa ordem) pros dias em que até o Flash-Lite estiver cheio.
-  // Evitamos fixar uma versão exata (tipo "gemini-2.5-flash") porque o
-  // Google aposenta essas de vez em quando — os aliases "-latest" o
-  // Google troca por conta própria, avisando por e-mail com 2 semanas de
-  // antecedência quando vai quebrar algo.
-  const GEMINI_MODELOS = ['gemini-flash-lite-latest', 'gemini-flash-latest'];
-  const CHAVE_GEMINI_STORAGE = 'gemini_api_key';
-
-  const PROMPT_SISTEMA_RELATORIO_IA = `Você é um analista de RH preparando um relatório interno e confidencial
-para a diretoria/gestão, sobre o desempenho de um colaborador nas
-perguntas dissertativas de uma avaliação interna de conhecimento (parte
-de um programa de capacitação). Isso NÃO é uma nota — é uma leitura
-qualitativa de gestão. Este relatório é de uso exclusivamente interno:
-nunca é mostrado ao próprio colaborador.
-
-Você vai receber TODAS as perguntas dissertativas e respostas dessa
-pessoa nessa prova. Analise o conjunto como um todo — não cada pergunta
-isoladamente — procurando padrões, consistência (ou inconsistência)
-entre as respostas, e o nível geral de domínio demonstrado.
-
-Escreva um relatório detalhado, em português claro e objetivo pra um
-gestor não-técnico, com estas quatro partes:
-- resumoGeral: um parágrafo (4 a 6 frases) com uma visão geral do
-  desempenho da pessoa nas questões dissertativas dessa prova.
-- pontosFortes: o que a pessoa demonstrou dominar bem, com exemplos
-  concretos baseados nas respostas dela.
-- pontosAtencao: lacunas, imprecisões ou temas que precisam de reforço,
-  com exemplos concretos.
-- recomendacao: uma recomendação objetiva e acionável pro gestor (ex:
-  reforçar treinamento num tema específico, pessoa está pronta pra mais
-  responsabilidade nesse tema, etc).
-
-Nunca invente informação que não esteja nas respostas do colaborador. Se
-a pessoa deixou perguntas em branco ou respondeu de forma muito vaga,
-isso deve aparecer refletido no relatório.
-
-Responda SOMENTE com o JSON pedido, sem texto fora dele.`;
-
-  function obterChaveGemini() {
-    return (localStorage.getItem(CHAVE_GEMINI_STORAGE) || '').trim();
-  }
-
-  window.configurarChaveGemini = function() {
-    const atual = obterChaveGemini();
-    const nova = window.prompt('Cole sua chave da API Gemini (gratuita — gere a sua, sem cartão, em https://aistudio.google.com/apikey):', atual);
-    if (nova === null) return obterChaveGemini();
-    localStorage.setItem(CHAVE_GEMINI_STORAGE, nova.trim());
-    return obterChaveGemini();
-  };
-
-  // O nível gratuito do Gemini responde 503 "high demand" / 429 de vez em
-  // quando, principalmente em horário de pico — é temporário do lado do
-  // Google. Tenta de novo (com uma pausa curta) antes de desistir; marca
-  // o status HTTP no erro pra quem chamou decidir se vale tentar outro
-  // modelo (sobrecarga) ou desistir na hora (erro de verdade, tipo chave inválida).
-  async function buscarGeminiComRetentativa(url, corpo) {
-    const MAX_TENTATIVAS = 3;
-    for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
-      const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });
-      if (resp.ok) return resp;
-      const sobrecarregado = resp.status === 503 || resp.status === 429;
-      if (!sobrecarregado || tentativa === MAX_TENTATIVAS) {
-        const erroTexto = await resp.text().catch(() => '');
-        const erro = new Error(`Gemini respondeu ${resp.status}${erroTexto ? ': ' + erroTexto.slice(0, 200) : ''}`);
-        erro.status = resp.status;
-        throw erro;
-      }
-      await new Promise(r => setTimeout(r, 1500 * tentativa));
-    }
-  }
-
-  // Pergunta à IA, de uma vez só, sobre TODAS as dissertativas de um
-  // resultado (pessoa + prova) — não uma pergunta isolada por vez. Tenta
-  // os modelos de GEMINI_MODELOS em ordem: só passa pro próximo se o
-  // atual esgotar as retentativas por SOBRECARGA (503/429) — qualquer
-  // outro erro (chave inválida, etc.) desiste na hora, sem trocar de modelo.
-  async function gerarTextoRelatorioIA(chave, nome, tituloProva, perguntasAbertas) {
-    const blocoPerguntas = perguntasAbertas.map((p, i) =>
-      `Pergunta ${i + 1}: ${p.enunciado}\nResposta do colaborador: ${p.resposta && String(p.resposta).trim() ? String(p.resposta).trim() : '(sem resposta / em branco)'}`
-    ).join('\n\n');
-    const corpo = {
-      systemInstruction: { parts: [{ text: PROMPT_SISTEMA_RELATORIO_IA }] },
-      contents: [{ role: 'user', parts: [{ text: `Colaborador: ${nome}\nProva: ${tituloProva}\n\n${blocoPerguntas}` }] }],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: 'OBJECT',
-          properties: {
-            resumoGeral: { type: 'STRING' },
-            pontosFortes: { type: 'STRING' },
-            pontosAtencao: { type: 'STRING' },
-            recomendacao: { type: 'STRING' }
-          },
-          required: ['resumoGeral', 'pontosFortes', 'pontosAtencao', 'recomendacao']
-        }
-      }
-    };
-
-    let ultimoErro;
-    for (const modelo of GEMINI_MODELOS) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${encodeURIComponent(chave)}`;
-      try {
-        const resp = await buscarGeminiComRetentativa(url, corpo);
-        const dadosResp = await resp.json();
-        const textoResposta = dadosResp && dadosResp.candidates && dadosResp.candidates[0] && dadosResp.candidates[0].content && dadosResp.candidates[0].content.parts && dadosResp.candidates[0].content.parts[0] && dadosResp.candidates[0].content.parts[0].text;
-        if (!textoResposta) throw new Error('A IA não retornou um relatório.');
-        let json;
-        try { json = JSON.parse(textoResposta); } catch (e) { throw new Error('A IA retornou um formato inesperado.'); }
-        return {
-          resumoGeral: String(json.resumoGeral || '').trim(),
-          pontosFortes: String(json.pontosFortes || '').trim(),
-          pontosAtencao: String(json.pontosAtencao || '').trim(),
-          recomendacao: String(json.recomendacao || '').trim()
-        };
-      } catch (e) {
-        ultimoErro = e;
-        if (!(e && (e.status === 503 || e.status === 429))) throw e;
-        console.warn('[ACE Admin] Modelo', modelo, 'sobrecarregado, tentando o próximo da lista...');
-      }
-    }
-    throw ultimoErro;
-  }
-
   // RESULTADOS
   let resultadosCache = [];
-  let relatoriosIACache = [];
 
   function montarDetalheResultado(r) {
     if (!r.perguntas || !r.perguntas.length) {
@@ -2438,7 +2283,6 @@ Responda SOMENTE com o JSON pedido, sem texto fora dele.`;
               <div style="font-weight:700;font-size:14px;color:${pct >= 70 ? 'var(--ok)' : 'var(--erro)'}">${r.acertos}/${r.total} (${pct}%)</div>
               <button class="btn-edit" onclick="window.alternarDetalheResultado('${r.id}')">▾ Detalhes</button>
               <button class="btn-secundario2" onclick="window.gerarRelatorioDoResultado('${nomeJs}', '${r.enviadoEm || ''}')">Relatório individual</button>
-              ${(r.perguntas || []).some(p => p.tipo === 'aberta') ? `<button class="btn-secundario2" title="Análise detalhada da IA — uso interno, não vai pro colaborador" onclick="window.abrirRelatorioIA('${r.id}')">🔒 Relatório IA</button>` : ''}
               <button class="btn-remove" onclick="window.excluirResultado('${r.id}', '${nomeJs}')">Excluir</button>
             </div>
           </div>
@@ -2757,97 +2601,6 @@ Responda SOMENTE com o JSON pedido, sem texto fora dele.`;
       </div>`;
   }
 
-  // Relatório interno de IA — documento SEPARADO do Relatório Individual
-  // (que vai pro colaborador). Mostra um aviso bem visível de uso interno
-  // e, embaixo, as próprias perguntas/respostas dissertativas que
-  // embasaram a análise, pra quem lê poder conferir o contexto.
-  function montarRelatorioIA(r, rel) {
-    const dataEnvio = r.enviadoEm ? new Date(r.enviadoEm).toLocaleDateString('pt-BR') : '—';
-    const dataGeracao = rel.geradoEm ? new Date(rel.geradoEm).toLocaleString('pt-BR') : '—';
-    const perguntasAbertas = (r.perguntas || []).map((p, i) => ({ ...p, idx: i })).filter(p => p.tipo === 'aberta');
-    return `
-      <div class="rel-ia-banner">🔒 USO INTERNO — RH / DIRETORIA — NÃO COMPARTILHAR COM O COLABORADOR</div>
-      <div class="rel-capa">
-        <img class="logo" src="ace2-logo-branco.png" alt="ACE Soluções Contábeis" onerror="this.style.display='none'">
-        <div class="rel-tag">ANÁLISE INTERNA DE IA · RESPOSTAS DISSERTATIVAS</div>
-        <div class="rel-subtag">AVALIAÇÕES DE CONHECIMENTO</div>
-        <h1>Relatório de<br>Análise Interna</h1>
-        <div class="rel-desc">${escapeAttr(r.nome)} — ${escapeAttr(r.tituloProva || 'Prova')}</div>
-        <div class="rel-divider"></div>
-        <div class="rel-meta-row">
-          <div class="item"><span>Colaborador</span><strong>${escapeAttr(r.nome)}</strong></div>
-          <div class="item"><span>Prova</span><strong>${escapeAttr(r.tituloProva || '—')}</strong></div>
-          <div class="item"><span>Enviada em</span><strong>${dataEnvio}</strong></div>
-          <div class="item"><span>Análise gerada em</span><strong>${dataGeracao}</strong></div>
-        </div>
-      </div>
-      <div class="rel-corpo">
-        <div class="rel-secao-titulo">Resumo Geral</div>
-        <p style="font-size:13.5px;color:#333;line-height:1.7;margin-bottom:18px;">${escapeAttr(rel.resumoGeral)}</p>
-
-        <div class="rel-secao-titulo">Pontos Fortes</div>
-        <p style="font-size:13.5px;color:#333;line-height:1.7;margin-bottom:18px;">${escapeAttr(rel.pontosFortes)}</p>
-
-        <div class="rel-secao-titulo">Pontos de Atenção</div>
-        <p style="font-size:13.5px;color:#333;line-height:1.7;margin-bottom:18px;">${escapeAttr(rel.pontosAtencao)}</p>
-
-        <div class="rel-secao-titulo">Recomendação</div>
-        <p style="font-size:13.5px;color:#333;line-height:1.7;margin-bottom:18px;">${escapeAttr(rel.recomendacao)}</p>
-
-        <div class="rel-secao-titulo">Base da Análise (respostas dissertativas)</div>
-        ${perguntasAbertas.map(p => `
-          <div class="rel-pergunta rel-pergunta-aberta">
-            <div class="enun">${p.idx + 1}. ${escapeAttr(p.enunciado)}</div>
-            <div class="rel-resposta-texto">${escapeAttr(p.resposta || '(sem resposta)').replace(/\n/g, '<br>')}</div>
-          </div>`).join('')}
-
-        <button class="btn-secundario2" style="margin-top:10px;" onclick="window.abrirRelatorioIA('${r.id}', true)">🔄 Gerar novamente</button>
-      </div>`;
-  }
-
-  window.abrirRelatorioIA = async function(resultadoId, forcar) {
-    const r = resultadosCache.find(x => x.id === resultadoId);
-    if (!r) return;
-    const perguntasAbertas = (r.perguntas || []).map((p, i) => ({ ...p, idx: i })).filter(p => p.tipo === 'aberta');
-    if (!perguntasAbertas.length) { alert('Esta prova não tem perguntas dissertativas pra analisar.'); return; }
-
-    const existente = !forcar && relatoriosIACache.find(x => x.id === resultadoId);
-    if (existente) {
-      relatorioAtual = { tipo: 'ia', nome: r.nome };
-      document.getElementById('relatorio-doc').innerHTML = montarRelatorioIA(r, existente);
-      document.getElementById('secao-relatorio').style.display = 'block';
-      window.scrollTo(0, 0);
-      return;
-    }
-
-    let chave = obterChaveGemini();
-    if (!chave) chave = window.configurarChaveGemini();
-    if (!chave) return;
-
-    loading(true, 'Gerando análise detalhada com IA...');
-    try {
-      const textoRel = await gerarTextoRelatorioIA(chave, r.nome, r.tituloProva || 'Prova', perguntasAbertas);
-      const dados = {
-        resultadoId, nome: r.nome, tituloProva: r.tituloProva || '',
-        ...textoRel,
-        geradoEm: new Date().toISOString(), geradoPor: usuarioEmail || ''
-      };
-      await setDoc(doc(db, 'relatorios_ia', resultadoId), dados);
-      const idx = relatoriosIACache.findIndex(x => x.id === resultadoId);
-      if (idx !== -1) relatoriosIACache[idx] = { id: resultadoId, ...dados };
-      else relatoriosIACache.push({ id: resultadoId, ...dados });
-
-      relatorioAtual = { tipo: 'ia', nome: r.nome };
-      document.getElementById('relatorio-doc').innerHTML = montarRelatorioIA(r, dados);
-      document.getElementById('secao-relatorio').style.display = 'block';
-      window.scrollTo(0, 0);
-    } catch(e) {
-      console.error('[ACE Admin] Erro ao gerar relatório de IA:', e);
-      alert('Não foi possível gerar a análise com IA agora (' + ((e && e.message) || e) + '). Tente de novo em instantes.');
-    }
-    loading(false);
-  };
-
   let relatorioAtual = null; // { tipo, nome, mes, ano } — usado no nome do arquivo do PDF
 
   window.gerarRelatorio = function() {
@@ -2906,8 +2659,6 @@ Responda SOMENTE com o JSON pedido, sem texto fora dele.`;
     const nomeArquivo = relatorioAtual
       ? (relatorioAtual.tipo === 'grupo'
           ? `relatorio_grupo_${NOMES_MESES[relatorioAtual.mes - 1]}_${relatorioAtual.ano}.pdf`
-          : relatorioAtual.tipo === 'ia'
-          ? `relatorio_interno_ia_${relatorioAtual.nome.replace(/\s+/g, '_')}.pdf`
           : `relatorio_${relatorioAtual.nome.replace(/\s+/g, '_')}_${NOMES_MESES[relatorioAtual.mes - 1]}_${relatorioAtual.ano}.pdf`)
       : 'relatorio.pdf';
 
