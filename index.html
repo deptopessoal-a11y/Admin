@@ -1904,6 +1904,7 @@
       </div>
       <div class="painel-detalhe-acoes">
         <button class="btn-secundario2" onclick="window.abrirPreviewProva('${p.id}')">Preview</button>
+        <button class="btn-secundario2" onclick="window.exportarProvaPdf('${p.id}')">📄 Exportar PDF</button>
         <button class="btn-secundario2" onclick="window.editarProva('${p.id}')">Editar</button>
         <button class="btn-secundario2" onclick="window.duplicarProva('${p.id}')">Duplicar</button>
         <button class="btn-perigo2" onclick="window.removerProva('${p.id}', '${p.titulo.replace(/'/g,"\\'")}')">Remover</button>
@@ -2470,6 +2471,58 @@
       </div>`;
   }
 
+  // Exportação de uma prova em PDF — pro gestor revisar o conteúdo
+  // (perguntas + gabarito) fora do painel, sem precisar de login. Não
+  // tem nada de colaborador aqui, é só o conteúdo da prova em si.
+  function montarRelatorioProva(p) {
+    const dataEmissao = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const statusLabel = { rascunho: 'Rascunho', publicada: 'Publicada', encerrada: 'Encerrada' }[provaStatusEfetivo(p)];
+    const c = cicloAtual();
+    const mes = p.cicloMes || c.mes;
+    const ano = p.cicloAno || c.ano;
+    const perguntas = p.perguntas || [];
+    const totalObjetivas = perguntas.filter(pg => pg.tipo !== 'aberta').length;
+    const totalAbertas = perguntas.filter(pg => pg.tipo === 'aberta').length;
+
+    const listaPerguntas = perguntas.map((pg, i) => {
+      if (pg.tipo === 'aberta') {
+        return `
+          <div class="rel-pergunta rel-pergunta-aberta">
+            <div class="enun">${i + 1}. ${escapeAttr(pg.enunciado)} <span style="font-weight:400;color:#888;font-size:11px;">(pergunta dissertativa — sem gabarito)</span></div>
+          </div>`;
+      }
+      return `
+        <div class="rel-pergunta">
+          <div class="enun">${i + 1}. ${escapeAttr(pg.enunciado)}</div>
+          ${pg.alternativas.map((a, j) => `<div class="rel-resposta-objetiva ${j === pg.correta ? 'certa' : ''}" style="margin-bottom:6px;">${escapeAttr(a)}${j === pg.correta ? ' ✓ (gabarito)' : ''}</div>`).join('')}
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="rel-capa">
+        <img class="logo" src="ace2-logo-branco.png" alt="ACE Soluções Contábeis" onerror="this.style.display='none'">
+        <div class="rel-tag">EXPORTAÇÃO DE PROVA · PARA REVISÃO DO GESTOR</div>
+        <div class="rel-subtag">AVALIAÇÕES DE CONHECIMENTO</div>
+        <h1>${escapeAttr(p.titulo)}</h1>
+        <div class="rel-desc">${statusLabel}${p.dono ? ' · ' + escapeAttr(p.dono) : ''} · Ciclo ${NOMES_MESES[mes - 1]}/${ano}</div>
+        <div class="rel-divider"></div>
+        <div class="rel-meta-row">
+          <div class="item"><span>Data de Emissão</span><strong>${dataEmissao}</strong></div>
+          <div class="item"><span>Status</span><strong>${statusLabel}</strong></div>
+          <div class="item"><span>Ciclo</span><strong>${NOMES_MESES[mes - 1]} de ${ano}</strong></div>
+        </div>
+        <div class="rel-stat-strip">
+          <div class="stat"><b>${perguntas.length}</b><span>Perguntas no total</span></div>
+          <div class="stat"><b>${totalObjetivas}</b><span>Múltipla escolha</span></div>
+          <div class="stat"><b>${totalAbertas}</b><span>Dissertativas</span></div>
+        </div>
+      </div>
+      <div class="rel-corpo">
+        <div class="rel-secao-titulo">Perguntas e Gabarito</div>
+        ${listaPerguntas || '<p style="font-size:12.5px;color:#888;">Esta prova ainda não tem perguntas cadastradas.</p>'}
+      </div>`;
+  }
+
   function montarRelatorioGrupo(mes, ano) {
     const doPeriodo = resultadosDoPeriodo(mes, ano, null);
     const dataEmissao = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -2636,6 +2689,15 @@
     window.scrollTo(0, 0);
   };
 
+  window.exportarProvaPdf = function(id) {
+    const p = provasCache.find(x => x.id === id);
+    if (!p) return;
+    relatorioAtual = { tipo: 'prova', nome: p.titulo };
+    document.getElementById('relatorio-doc').innerHTML = montarRelatorioProva(p);
+    document.getElementById('secao-relatorio').style.display = 'block';
+    window.scrollTo(0, 0);
+  };
+
   window.fecharRelatorio = function() {
     document.getElementById('secao-relatorio').style.display = 'none';
   };
@@ -2659,6 +2721,8 @@
     const nomeArquivo = relatorioAtual
       ? (relatorioAtual.tipo === 'grupo'
           ? `relatorio_grupo_${NOMES_MESES[relatorioAtual.mes - 1]}_${relatorioAtual.ano}.pdf`
+          : relatorioAtual.tipo === 'prova'
+          ? `prova_${relatorioAtual.nome.replace(/\s+/g, '_')}.pdf`
           : `relatorio_${relatorioAtual.nome.replace(/\s+/g, '_')}_${NOMES_MESES[relatorioAtual.mes - 1]}_${relatorioAtual.ano}.pdf`)
       : 'relatorio.pdf';
 
