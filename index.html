@@ -2166,6 +2166,11 @@
   }
 
   const LABEL_AVALIACAO = { adequada: 'Adequada', parcial: 'Parcial', inadequada: 'Inadequada' };
+  const LABEL_Q1_ALINHAMENTO = {
+    sim: 'Sim, os temas da prova foram bem cobertos nas aulas.',
+    parcial: 'Parcialmente, algumas questões exigiram conhecimentos não aprofundados.',
+    nao: 'Não, senti que a prova cobrou assuntos que não foram bem explicados.'
+  };
 
   function renderCorrecao() {
     const itens = itensAbertos();
@@ -2604,7 +2609,9 @@
     // relatório é o próprio colaborador ou o RH, não faz sentido expor o
     // gabarito completo de novo. Nas abertas, mostra a avaliação do RH
     // (Fase 5) como um checklist.
-    const detalhePerguntas = resultados.map(r => `
+    const detalhePerguntas = resultados.map(r => {
+      const feedbackCurso = avaliacaoCursoCache.find(a => a.resultadoId === r.id);
+      return `
       <div class="rel-secao-titulo" style="font-size:14.5px;margin-top:22px;">${escapeAttr(r.tituloProva || 'Prova')} — ${r.enviadoEm ? new Date(r.enviadoEm).toLocaleDateString('pt-BR') : ''}</div>
       ${(r.perguntas || []).map((p, i) => {
         if (p.tipo === 'aberta') {
@@ -2632,7 +2639,16 @@
             ${!certa ? `<div class="rel-resposta-correta-nota">Resposta correta: ${escapeAttr(p.alternativas[p.correta])}</div>` : ''}
           </div>`;
       }).join('') || '<p style="font-size:12.5px;color:#888;">Detalhe não disponível para esta prova.</p>'}
-    `).join('');
+      ${feedbackCurso ? `
+        <div class="rel-pergunta" style="background:var(--bg2);">
+          <div class="enun">Feedback sobre o curso <span style="font-weight:400;color:#888;font-size:11px;">(não é nota — opinião sobre as aulas/material, não sobre esta prova)</span></div>
+          <p style="font-size:12.5px;color:#333;margin:6px 0;"><b>Alinhamento aulas × prova:</b> ${escapeAttr(LABEL_Q1_ALINHAMENTO[feedbackCurso.q1Alinhamento] || feedbackCurso.q1Alinhamento)}</p>
+          <p style="font-size:12.5px;color:#333;margin:6px 0;"><b>Nota para a didática (0–10):</b> ${feedbackCurso.q2Didatica}</p>
+          ${feedbackCurso.q3Melhoria ? `<p style="font-size:12.5px;color:#333;margin:6px 0;"><b>Sugestão de melhoria:</b> ${escapeAttr(feedbackCurso.q3Melhoria)}</p>` : ''}
+          ${feedbackCurso.q4Tema ? `<p style="font-size:12.5px;color:#333;margin:6px 0;"><b>Sugestão de tema:</b> ${escapeAttr(feedbackCurso.q4Tema)}</p>` : ''}
+        </div>` : ''}
+    `;
+    }).join('');
 
     const resumoTexto = `${escapeAttr(nome)} realizou <b>${total}</b> avaliaç${total === 1 ? 'ão' : 'ões'} em ${NOMES_MESES[mes - 1]} de ${ano}` +
       (mediaAcertos !== null ? `, com aproveitamento médio de <b>${mediaAcertos.toFixed(1)}%</b>.` : '.');
