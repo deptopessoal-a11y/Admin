@@ -155,6 +155,30 @@
     .kpi-card.destaque .kpi-label { color:rgba(255,255,255,0.6); }
     .kpi-card .kpi-valor { font-family:'Archivo',sans-serif; font-stretch:125%; font-weight:800; font-size:29px; color:var(--ink); }
     .kpi-card.destaque .kpi-valor { color:#fff; }
+    .kpi-row-3 { grid-template-columns:repeat(3,1fr); }
+
+    /* Avaliação do Curso — Matriz de Ação + NPS */
+    .curso-matriz { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .curso-quadrante { border-radius:6px; padding:16px 18px; border:1px solid var(--linha); border-left:4px solid var(--cinza-claro); }
+    .curso-quadrante.ok { border-left-color:var(--ok); background:var(--ok-bg); }
+    .curso-quadrante.erro { border-left-color:var(--erro); background:var(--erro-bg); }
+    .curso-quadrante .qtd { font-family:'Archivo',sans-serif; font-stretch:125%; font-weight:800; font-size:22px; color:var(--ink); }
+    .curso-quadrante .diag { font-weight:700; font-size:13px; margin:4px 0 6px; }
+    .curso-quadrante .acao { font-size:12px; color:var(--cinza); line-height:1.5; }
+    .curso-nps-row { display:flex; gap:14px; }
+    .curso-nps-bloco { flex:1; border-radius:6px; padding:14px 16px; text-align:center; }
+    .curso-nps-bloco .n { font-family:'Archivo',sans-serif; font-stretch:125%; font-weight:800; font-size:24px; }
+    .curso-nps-bloco .l { font-size:11px; color:var(--cinza); margin-top:2px; }
+    .curso-nps-bloco.detrator { background:var(--erro-bg); }
+    .curso-nps-bloco.detrator .n { color:var(--erro); }
+    .curso-nps-bloco.neutro { background:var(--bg2); }
+    .curso-nps-bloco.promotor { background:var(--ok-bg); }
+    .curso-nps-bloco.promotor .n { color:var(--ok); }
+    .curso-comentario { padding:12px 0; border-bottom:1px solid var(--divisor); }
+    .curso-comentario:last-child { border-bottom:none; }
+    .curso-comentario .cab { display:flex; justify-content:space-between; gap:10px; font-size:12px; color:var(--cinza); margin-bottom:4px; }
+    .curso-comentario .nota-baixa { color:var(--erro); font-weight:700; }
+    .curso-comentario .txto { font-size:13.5px; color:var(--ink); }
 
     /* Cards genéricos */
     .card2 { background:#fff; border:1px solid var(--linha); border-radius:6px; overflow:hidden; margin-bottom:22px; }
@@ -663,6 +687,7 @@
         <div class="sidebar-link" data-tela="aplicacao" onclick="window.mostrarTela('aplicacao')"><span>Aplicação</span><span class="sidebar-badge" id="badge-aplicacao" style="display:none">0</span></div>
         <div class="sidebar-link" data-tela="correcao" onclick="window.mostrarTela('correcao')"><span>Correção</span><span class="sidebar-badge" id="badge-correcao" style="display:none">0</span></div>
         <div class="sidebar-link" data-tela="resultados" onclick="window.mostrarTela('resultados')"><span>Resultados</span></div>
+        <div class="sidebar-link" data-tela="avaliacao-curso" onclick="window.mostrarTela('avaliacao-curso')"><span>Avaliação do Curso</span></div>
         <div class="sidebar-grupo-titulo">Saída</div>
         <div class="sidebar-link" data-tela="relatorios" onclick="window.mostrarTela('relatorios')"><span>Relatórios</span></div>
       </nav>
@@ -809,6 +834,42 @@
           <div class="list-area" id="lista-resultados">
             <div class="empty-state"><div class="es-icon">📊</div>Nenhum resultado ainda.</div>
           </div>
+        </div>
+      </section>
+
+      <!-- AVALIAÇÃO DO CURSO (feedback pós-prova, separado da nota) -->
+      <section class="tela-painel" id="tela-avaliacao-curso">
+        <div class="tela-breadcrumb">Ciclo</div>
+        <div class="tela-header">
+          <div>
+            <h1>Avaliação do Curso</h1>
+            <p>Feedback que o colaborador dá sobre o curso/treinamento logo depois de enviar a prova — não é sobre a nota.</p>
+          </div>
+        </div>
+        <div class="kpi-row kpi-row-3">
+          <div class="kpi-card"><div class="kpi-label">Respostas no ciclo</div><div class="kpi-valor" id="curso-kpi-respostas">—</div></div>
+          <div class="kpi-card destaque"><div class="kpi-label">Nota média (didática)</div><div class="kpi-valor" id="curso-kpi-media">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Detratores (nota ≤ 6)</div><div class="kpi-valor" id="curso-kpi-detratores">—</div></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-card-header"><h3>Matriz de Ação <span class="count" id="curso-lbl-matriz">0</span></h3></div>
+          <div id="curso-matriz"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-card-header"><h3>Didática das aulas (NPS)</h3></div>
+          <div id="curso-nps"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-card-header"><h3>Comentários de Melhoria <span class="count" id="curso-lbl-melhoria">0</span></h3></div>
+          <div class="list-area" id="curso-lista-melhoria"></div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-card-header"><h3>Sugestões de Tema <span class="count" id="curso-lbl-temas">0</span></h3></div>
+          <div class="list-area" id="curso-lista-temas"></div>
         </div>
       </section>
 
@@ -1006,6 +1067,7 @@
     renderInicio();
     renderProvasFiltradasInterno();
     renderAplicacao();
+    renderAvaliacaoCurso();
   }
 
   window.cicloAnterior = function() {
@@ -1097,11 +1159,23 @@
         avaliacoesAbertasCache = [];
       }
 
+      // "avaliacoes_curso" é coleção nova (feedback pós-prova sobre o
+      // curso) — mesmo tratamento de regra ainda não aplicada.
+      try {
+        const snapAvCurso = await getDocs(collection(db, 'avaliacoes_curso'));
+        avaliacaoCursoCache = [];
+        snapAvCurso.forEach(d => avaliacaoCursoCache.push({ id: d.id, ...d.data() }));
+      } catch(e) {
+        console.error('[ACE Admin] Erro ao carregar avaliações de curso:', e);
+        avaliacaoCursoCache = [];
+      }
+
       renderProvas(provasCache);
       renderResultados(resultadosCache);
       renderInicio();
       renderAplicacao();
       renderCorrecao();
+      renderAvaliacaoCurso();
     } catch(e) {
       alert('Erro ao carregar dados. Verifique sua conexão.');
     }
@@ -2333,6 +2407,91 @@
       loading(false);
     }
   };
+
+  // ── AVALIAÇÃO DO CURSO (feedback pós-prova — Q1 alinhamento, Q2
+  //    didática 0-10, Q3 melhoria, Q4 tema) — a Matriz de Ação cruza a
+  //    nota da prova ligada (resultadoId) com a resposta da Q1, igual à
+  //    matriz de referência entregue: só "sim"/"não" entram nos 4
+  //    quadrantes; "parcial" fica fora da matriz, mas é contado à parte. ──
+  let avaliacaoCursoCache = [];
+
+  const DIAGNOSTICO_MATRIZ = [
+    { filtro: (notaAlta, q1) => notaAlta && q1 === 'sim', classe: 'ok',
+      diagnostico: 'Sucesso Total',
+      acao: 'O aluno aprendeu e reconhece que a aula foi o motor desse aprendizado. Manter a metodologia e o instrutor do módulo.' },
+    { filtro: (notaAlta, q1) => !notaAlta && q1 === 'nao', classe: 'erro',
+      diagnostico: 'Falha de Conteúdo',
+      acao: 'A prova exigiu algo que o instrutor não ensinou ou o material de apoio estava defasado. Revisar a ementa urgentemente. Ajustar a prova ou regravar/complementar a aula que faltou.' },
+    { filtro: (notaAlta, q1) => !notaAlta && q1 === 'sim', classe: '',
+      diagnostico: 'Falsa Confiança / Prova Difícil',
+      acao: 'O aluno achou que entendeu a aula, mas a prova foi excessivamente rigorosa ou as questões estavam confusas. Revisar o nível de dificuldade das questões da prova. Inserir simulados práticos durante as aulas.' },
+    { filtro: (notaAlta, q1) => notaAlta && q1 === 'nao', classe: '',
+      diagnostico: 'Desalinhamento Positivo',
+      acao: 'A prova estava muito fácil ou o aluno precisou estudar por fora (Google, colegas) para conseguir responder. Elevar o nível da prova para refletir o conteúdo das aulas ou investigar se o instrutor está sendo superficial.' }
+  ];
+
+  function renderAvaliacaoCurso() {
+    const doCiclo = avaliacaoCursoCache.filter(a => cicloBate(cicloDaProva(a.provaId)));
+
+    document.getElementById('curso-kpi-respostas').textContent = doCiclo.length;
+    const mediaQ2 = doCiclo.length ? doCiclo.reduce((s, a) => s + (a.q2Didatica || 0), 0) / doCiclo.length : null;
+    document.getElementById('curso-kpi-media').textContent = mediaQ2 === null ? '—' : mediaQ2.toFixed(1);
+    const nDetratores = doCiclo.filter(a => a.q2Didatica <= 6).length;
+    document.getElementById('curso-kpi-detratores').textContent = doCiclo.length ? Math.round(nDetratores / doCiclo.length * 100) + '%' : '—';
+
+    // Só entra na matriz quem tem prova com nota objetiva (total > 0) —
+    // sem isso não dá pra dizer se a nota foi "alta" ou "baixa".
+    const comNota = doCiclo.map(a => {
+      const r = resultadosCache.find(x => x.id === a.resultadoId);
+      return (r && r.total > 0) ? { ...a, pct: (r.acertos / r.total) * 100 } : null;
+    }).filter(Boolean);
+    const nParciais = doCiclo.filter(a => a.q1Alinhamento === 'parcial').length;
+
+    document.getElementById('curso-lbl-matriz').textContent = comNota.length;
+    document.getElementById('curso-matriz').innerHTML = `
+      <div class="curso-matriz">
+        ${DIAGNOSTICO_MATRIZ.map(q => {
+          const qtd = comNota.filter(a => q.filtro(a.pct >= 70, a.q1Alinhamento)).length;
+          return `
+            <div class="curso-quadrante ${q.classe}">
+              <div class="qtd">${qtd}</div>
+              <div class="diag">${escapeAttr(q.diagnostico)}</div>
+              <div class="acao">${escapeAttr(q.acao)}</div>
+            </div>`;
+        }).join('')}
+      </div>
+      ${nParciais ? `<p style="font-size:12px;color:var(--cinza);margin-top:12px;">+ ${nParciais} resposta${nParciais === 1 ? '' : 's'} "parcialmente" na Q1 — não entra nos 4 quadrantes acima (a matriz só define sim/não).</p>` : ''}
+      ${!comNota.length ? '<div class="empty2">Nenhuma resposta com prova de nota objetiva neste ciclo ainda.</div>' : ''}
+    `;
+
+    const nNeutros = doCiclo.filter(a => a.q2Didatica >= 7 && a.q2Didatica <= 8).length;
+    const nPromotores = doCiclo.filter(a => a.q2Didatica >= 9).length;
+    document.getElementById('curso-nps').innerHTML = doCiclo.length ? `
+      <div class="curso-nps-row">
+        <div class="curso-nps-bloco detrator"><div class="n">${nDetratores}</div><div class="l">Detratores (0–6)</div></div>
+        <div class="curso-nps-bloco neutro"><div class="n">${nNeutros}</div><div class="l">Neutros (7–8)</div></div>
+        <div class="curso-nps-bloco promotor"><div class="n">${nPromotores}</div><div class="l">Promotores (9–10)</div></div>
+      </div>` : '<div class="empty2">Nenhuma resposta neste ciclo ainda.</div>';
+
+    // Comentários de melhoria (Q3) — os de nota baixa na Q2 vêm primeiro,
+    // é a leitura que a matriz de referência recomenda.
+    const comMelhoria = doCiclo.filter(a => a.q3Melhoria && a.q3Melhoria.trim());
+    const ordenados = [...comMelhoria].sort((a, b) => (a.q2Didatica || 0) - (b.q2Didatica || 0));
+    document.getElementById('curso-lbl-melhoria').textContent = comMelhoria.length;
+    document.getElementById('curso-lista-melhoria').innerHTML = ordenados.length ? ordenados.map(a => `
+      <div class="curso-comentario">
+        <div class="cab"><span>${escapeAttr(a.nome)} · ${escapeAttr(a.tituloProva || '')}</span><span class="${a.q2Didatica < 7 ? 'nota-baixa' : ''}">Nota didática: ${a.q2Didatica}</span></div>
+        <div class="txto">${escapeAttr(a.q3Melhoria)}</div>
+      </div>`).join('') : '<div class="empty-state"><div class="es-icon">💬</div>Nenhum comentário neste ciclo ainda.</div>';
+
+    const comTema = doCiclo.filter(a => a.q4Tema && a.q4Tema.trim());
+    document.getElementById('curso-lbl-temas').textContent = comTema.length;
+    document.getElementById('curso-lista-temas').innerHTML = comTema.length ? comTema.map(a => `
+      <div class="curso-comentario">
+        <div class="cab"><span>${escapeAttr(a.nome)} · ${escapeAttr(a.tituloProva || '')}</span></div>
+        <div class="txto">${escapeAttr(a.q4Tema)}</div>
+      </div>`).join('') : '<div class="empty-state"><div class="es-icon">💡</div>Nenhuma sugestão neste ciclo ainda.</div>';
+  }
 
   // RELATÓRIOS
   const NOMES_MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
